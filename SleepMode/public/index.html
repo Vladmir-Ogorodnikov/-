@@ -2,161 +2,150 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Умная Почта - Вход</title>
+    <title>Multi-Mail Client</title>
     <style>
-        body { font-family: sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
-        
-        /* Стили для форм входа и регистрации */
-        .auth-container { max-width: 400px; margin: 100px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; }
-        .auth-container h2 { margin-top: 0; color: #333; }
-        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; margin-top: 10px;}
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; }
+        .auth-container { max-width: 450px; margin: 50px auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); text-align: center; }
+        .auth-container h2 { margin-bottom: 20px; color: #1c1e21; }
+        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+        button { width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 10px; transition: 0.3s; }
         button:hover { background-color: #0056b3; }
-        .switch-form-link { color: #007bff; cursor: pointer; font-size: 0.9em; margin-top: 15px; display: inline-block; text-decoration: underline; }
+        .switch-link { color: #007bff; cursor: pointer; font-size: 14px; margin-top: 15px; display: block; text-decoration: none; }
         
-        /* Стили для главного приложения */
-        .header { text-align: center; margin-bottom: 30px; position: relative; }
-        .logout-btn { position: absolute; right: 0; top: 0; width: auto; background-color: #dc3545; padding: 8px 15px; font-size: 14px; }
-        .logout-btn:hover { background-color: #c82333; }
+        .header { display: flex; justify-content: space-between; align-items: center; max-width: 800px; margin: 0 auto 30px; }
+        .logout-btn { width: auto; background-color: #ff4757; padding: 8px 15px; margin: 0; }
+        
         .email-container { max-width: 800px; margin: 0 auto; }
-        .email-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 15px; border-left: 5px solid #007bff; transition: transform 0.2s; }
-        .email-card:hover { transform: translateY(-3px); }
-        .ai-summary { background: #e9ecef; padding: 10px; border-radius: 4px; font-size: 0.9em; color: #333; margin-top: 15px; }
-        .sender { font-weight: bold; color: #222; }
-        .date { color: #888; font-size: 0.8em; float: right; }
-        h3 { margin-top: 10px; margin-bottom: 5px; color: #333; }
-        p { color: #555; line-height: 1.4; }
-
-        /* Класс для скрытия элементов */
+        .email-card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; border-left: 6px solid #007bff; }
+        .sender { font-weight: bold; color: #2f3542; display: block; margin-bottom: 5px; }
+        .date { color: #a4b0be; font-size: 12px; float: right; }
+        .subject { margin: 10px 0; color: #2f3542; font-size: 18px; }
+        .body { color: #57606f; line-height: 1.5; font-size: 14px; }
+        .ai-tag { margin-top: 15px; padding: 8px; background: #f1f2f6; border-radius: 5px; font-size: 13px; border: 1px dashed #ced4da; }
+        
         .hidden { display: none; }
+        .loading { text-align: center; color: #747d8c; padding: 40px; font-style: italic; }
     </style>
 </head>
 <body>
 
     <div id="login-screen" class="auth-container">
-        <h2>Вход в систему</h2>
-        <input type="email" id="login-email" placeholder="Email (например, test@mail.ru)">
+        <h2>С возвращением!</h2>
+        <input type="email" id="login-email" placeholder="Email аккаунта">
         <input type="password" id="login-password" placeholder="Пароль">
-        <button onclick="login()">Войти</button>
-        <div class="switch-form-link" onclick="switchScreen('register-screen')">Нет аккаунта? Зарегистрироваться</div>
+        <button onclick="login()">Войти в почту</button>
+        <a class="switch-link" onclick="switchScreen('register-screen')">Создать новый аккаунт</a>
     </div>
 
     <div id="register-screen" class="auth-container hidden">
         <h2>Регистрация</h2>
-        <input type="email" id="reg-email" placeholder="Ваш Email">
-        <input type="password" id="reg-password" placeholder="Придумайте пароль">
-        <button onclick="register()">Зарегистрироваться</button>
-        <div class="switch-form-link" onclick="switchScreen('login-screen')">Уже есть аккаунт? Войти</div>
+        <p style="font-size: 13px; color: #666;">Данные аккаунта:</p>
+        <input type="email" id="reg-email" placeholder="Email для входа">
+        <input type="password" id="reg-password" placeholder="Пароль для входа">
+        
+        <p style="font-size: 13px; color: #666; margin-top: 15px;">Настройки подключаемой почты:</p>
+        <input type="email" id="mail-user" placeholder="Ваш реальный ящик (например, @mail.ru)">
+        <input type="password" id="mail-pass" placeholder="Пароль приложения (16 знаков)">
+        <select id="mail-host">
+            <option value="imap.mail.ru">Mail.ru</option>
+            <option value="imap.yandex.ru">Yandex</option>
+            <option value="imap.gmail.com">Gmail</option>
+            <option value="outlook.office365.com">Outlook</option>
+        </select>
+        
+        <button onclick="register()">Создать и подключить</button>
+        <a class="switch-link" onclick="switchScreen('login-screen')">Уже есть аккаунт</a>
     </div>
 
     <div id="app-screen" class="hidden">
         <div class="header">
-            <h1>Важные сообщения 🚀</h1>
-            <p>Добро пожаловать, <span id="user-email-display"></span>!</p>
+            <div>
+                <h1 style="margin:0;">Inbox</h1>
+                <span id="user-display" style="color:#747d8c;"></span>
+            </div>
             <button class="logout-btn" onclick="logout()">Выйти</button>
         </div>
-        <div class="email-container" id="email-list"></div>
+        <div id="email-list" class="email-container"></div>
     </div>
 
     <script>
-        // Адрес нашего локального сервера с базой данных
         const API_URL = '/api';
+        let currentUserEmail = '';
 
-        // --- ЛОГИКА ПЕРЕКЛЮЧЕНИЯ ЭКРАНОВ ---
-        function switchScreen(screenId) {
-            document.getElementById('login-screen').classList.add('hidden');
-            document.getElementById('register-screen').classList.add('hidden');
-            document.getElementById('app-screen').classList.add('hidden');
-            document.getElementById(screenId).classList.remove('hidden');
+        function switchScreen(id) {
+            document.querySelectorAll('.auth-container, #app-screen').forEach(el => el.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
         }
 
-        // --- ЛОГИКА РЕГИСТРАЦИИ (Отправка на сервер) ---
         async function register() {
-            const email = document.getElementById('reg-email').value;
-            const password = document.getElementById('reg-password').value;
+            const body = {
+                email: document.getElementById('reg-email').value,
+                password: document.getElementById('reg-password').value,
+                mail_user: document.getElementById('mail-user').value,
+                mail_pass: document.getElementById('mail-pass').value,
+                mail_host: document.getElementById('mail-host').value
+            };
 
-            if (email === "" || password === "") {
-                alert("Пожалуйста, заполните все поля!");
-                return;
-            }
-
-            try {
-                const response = await fetch(`${API_URL}/register`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    alert(data.message); // Сообщение об успехе от сервера
-                    switchScreen('login-screen');
-                } else {
-                    alert("Ошибка: " + data.message); // Сообщение об ошибке от сервера
-                }
-            } catch (error) {
-                alert("Ошибка соединения. Убедитесь, что сервер запущен (команда node server.js).");
-            }
+            const res = await fetch(`${API_URL}/register`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(body)
+            });
+            const data = await res.json();
+            alert(data.message);
+            if (res.ok) switchScreen('login-screen');
         }
 
-        // --- ЛОГИКА ВХОДА (Проверка через сервер) ---
         async function login() {
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
 
-            if (email === "" || password === "") {
-                alert("Пожалуйста, заполните все поля!");
-                return;
+            const res = await fetch(`${API_URL}/login`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ email, password })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                currentUserEmail = data.email;
+                document.getElementById('user-display').innerText = currentUserEmail;
+                switchScreen('app-screen');
+                fetchEmails();
+            } else {
+                alert("Ошибка входа");
             }
+        }
+
+        async function fetchEmails() {
+            const list = document.getElementById('email-list');
+            list.innerHTML = '<div class="loading">📡 Подключаемся к вашему почтовому серверу...</div>';
 
             try {
-                const response = await fetch(`${API_URL}/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
+                const res = await fetch(`${API_URL}/emails`, {
+                    headers: { 'x-user-email': currentUserEmail }
                 });
+                const emails = await res.json();
+                list.innerHTML = "";
 
-                const data = await response.json();
-
-                if (response.ok) {
-                    // Если сервер пустил, показываем почту
-                    document.getElementById('user-email-display').innerText = data.email;
-                    switchScreen('app-screen');
-                    renderEmails(mockEmails);
-                } else {
-                    alert("Ошибка: " + data.message);
-                }
-            } catch (error) {
-                alert("Ошибка соединения. Убедитесь, что сервер запущен (команда node server.js).");
+                emails.forEach(mail => {
+                    list.innerHTML += `
+                        <div class="email-card">
+                            <span class="date">${mail.date}</span>
+                            <span class="sender">${mail.sender}</span>
+                            <h3 class="subject">${mail.subject}</h3>
+                            <p class="body">${mail.body}</p>
+                            <div class="ai-tag">✨ Авто-обработка: Письмо загружено из ${document.getElementById('mail-host').value}</div>
+                        </div>
+                    `;
+                });
+            } catch (e) {
+                list.innerHTML = '<p style="text-align:center;color:red;">❌ Ошибка подключения к почте. Проверьте пароль приложения.</p>';
             }
         }
 
-        // --- ЛОГИКА ВЫХОДА ---
         function logout() {
             switchScreen('login-screen');
-            document.getElementById('login-password').value = ""; // Очищаем пароль для безопасности
-        }
-
-        // --- ДАННЫЕ И ЛОГИКА ПИСЕМ ---
-        const mockEmails = [
-            { id: 1, sender: "Иван Иванов (Деканат)", date: "Сегодня, 10:30", subject: "Изменения в расписании", body: "Лекция переносится на 12:00. Присутствие обязательно.", aiSummary: "Лекция перенесена на 12:00. Явка обязательна." },
-            { id: 2, sender: "Проф. Смирнов", date: "Вчера, 18:45", subject: "Материалы к курсовой", body: "Коллеги, во вложении список литературы. Ознакомиться до пятницы.", aiSummary: "Изучить список литературы до пятницы." }
-        ];
-
-        function renderEmails(emailsArray) {
-            const container = document.getElementById("email-list");
-            container.innerHTML = ""; 
-            emailsArray.forEach(function(email) {
-                container.innerHTML += `
-                    <div class="email-card">
-                        <span class="date">${email.date}</span>
-                        <div class="sender">${email.sender}</div>
-                        <h3>${email.subject}</h3>
-                        <p>${email.body}</p>
-                        <div class="ai-summary"><strong>🤖 Вывод нейросети:</strong> ${email.aiSummary}</div>
-                    </div>`;
-            });
         }
     </script>
 </body>
