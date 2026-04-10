@@ -14,7 +14,7 @@
         button:hover { background-color: #0056b3; }
         .switch-form-link { color: #007bff; cursor: pointer; font-size: 0.9em; margin-top: 15px; display: inline-block; text-decoration: underline; }
         
-        /* Стили для главного приложения (из прошлого шага) */
+        /* Стили для главного приложения */
         .header { text-align: center; margin-bottom: 30px; position: relative; }
         .logout-btn { position: absolute; right: 0; top: 0; width: auto; background-color: #dc3545; padding: 8px 15px; font-size: 14px; }
         .logout-btn:hover { background-color: #c82333; }
@@ -59,19 +59,19 @@
     </div>
 
     <script>
+        // Адрес нашего локального сервера с базой данных
+        const API_URL = 'http://localhost:3000/api';
+
         // --- ЛОГИКА ПЕРЕКЛЮЧЕНИЯ ЭКРАНОВ ---
         function switchScreen(screenId) {
-            // Скрываем все экраны
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('register-screen').classList.add('hidden');
             document.getElementById('app-screen').classList.add('hidden');
-            
-            // Показываем нужный
             document.getElementById(screenId).classList.remove('hidden');
         }
 
-        // --- ЛОГИКА РЕГИСТРАЦИИ И ВХОДА ---
-        function register() {
+        // --- ЛОГИКА РЕГИСТРАЦИИ (Отправка на сервер) ---
+        async function register() {
             const email = document.getElementById('reg-email').value;
             const password = document.getElementById('reg-password').value;
 
@@ -80,39 +80,65 @@
                 return;
             }
 
-            // Сохраняем "пользователя" в память браузера (имитация базы данных бэкенда)
-            localStorage.setItem('savedEmail', email);
-            localStorage.setItem('savedPassword', password);
-            
-            alert("Регистрация успешна! Теперь войдите.");
-            switchScreen('login-screen');
-        }
+            try {
+                const response = await fetch(`${API_URL}/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
 
-        function login() {
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
+                const data = await response.json();
 
-            // Достаем сохраненные данные из памяти
-            const savedEmail = localStorage.getItem('savedEmail');
-            const savedPassword = localStorage.getItem('savedPassword');
-
-            if (email === savedEmail && password === savedPassword && email !== null) {
-                // Если данные совпали - пускаем внутрь
-                document.getElementById('user-email-display').innerText = email;
-                switchScreen('app-screen');
-                renderEmails(mockEmails); // Рисуем письма только после входа
-            } else {
-                alert("Неверный email или пароль! Или вы еще не зарегистрировались.");
+                if (response.ok) {
+                    alert(data.message); // Сообщение об успехе от сервера
+                    switchScreen('login-screen');
+                } else {
+                    alert("Ошибка: " + data.message); // Сообщение об ошибке от сервера
+                }
+            } catch (error) {
+                alert("Ошибка соединения. Убедитесь, что сервер запущен (команда node server.js).");
             }
         }
 
-        function logout() {
-            switchScreen('login-screen');
-            // Очищаем поля ввода
-            document.getElementById('login-password').value = "";
+        // --- ЛОГИКА ВХОДА (Проверка через сервер) ---
+        async function login() {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            if (email === "" || password === "") {
+                alert("Пожалуйста, заполните все поля!");
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Если сервер пустил, показываем почту
+                    document.getElementById('user-email-display').innerText = data.email;
+                    switchScreen('app-screen');
+                    renderEmails(mockEmails);
+                } else {
+                    alert("Ошибка: " + data.message);
+                }
+            } catch (error) {
+                alert("Ошибка соединения. Убедитесь, что сервер запущен (команда node server.js).");
+            }
         }
 
-        // --- ДАННЫЕ И ЛОГИКА ПИСЕМ (из предыдущего шага) ---
+        // --- ЛОГИКА ВЫХОДА ---
+        function logout() {
+            switchScreen('login-screen');
+            document.getElementById('login-password').value = ""; // Очищаем пароль для безопасности
+        }
+
+        // --- ДАННЫЕ И ЛОГИКА ПИСЕМ ---
         const mockEmails = [
             { id: 1, sender: "Иван Иванов (Деканат)", date: "Сегодня, 10:30", subject: "Изменения в расписании", body: "Лекция переносится на 12:00. Присутствие обязательно.", aiSummary: "Лекция перенесена на 12:00. Явка обязательна." },
             { id: 2, sender: "Проф. Смирнов", date: "Вчера, 18:45", subject: "Материалы к курсовой", body: "Коллеги, во вложении список литературы. Ознакомиться до пятницы.", aiSummary: "Изучить список литературы до пятницы." }
