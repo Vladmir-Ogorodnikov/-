@@ -50,8 +50,11 @@ app.get('/api/emails', async (req, res) => {
         const connection = await imaps.connect(config);
         await connection.openBox('INBOX');
 
+        const fetchOptions = {
+            bodies: ['HEADER.FIELDS (FROM TO SUBJECT DATE)', 'TEXT'],
+            markSeen: false
+        };
         const searchCriteria = ['ALL'];
-        const fetchOptions = { bodies: ['HEADER', 'TEXT', ''], markSeen: false };
         const messages = await connection.search(searchCriteria, fetchOptions);
         
         const lastMessages = messages.slice(-5).reverse();
