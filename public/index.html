@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Multi-Mail Client</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; }
+        .auth-container { max-width: 450px; margin: 50px auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); text-align: center; }
+        .auth-container h2 { margin-bottom: 20px; color: #1c1e21; }
+        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+        button { width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 10px; transition: 0.3s; }
+        button:hover { background-color: #0056b3; }
+        .switch-link { color: #007bff; cursor: pointer; font-size: 14px; margin-top: 15px; display: block; text-decoration: none; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; max-width: 800px; margin: 0 auto 30px; }
+        .logout-btn { width: auto; background-color: #ff4757; padding: 8px 15px; margin: 0; }
+        
+        .email-container { max-width: 800px; margin: 0 auto; }
+        .email-card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; border-left: 6px solid #007bff; }
+        .sender { font-weight: bold; color: #2f3542; display: block; margin-bottom: 5px; }
+        .date { color: #a4b0be; font-size: 12px; float: right; }
+        .subject { margin: 10px 0; color: #2f3542; font-size: 18px; }
+        .body { color: #57606f; line-height: 1.5; font-size: 14px; }
+        .ai-tag { margin-top: 15px; padding: 8px; background: #f1f2f6; border-radius: 5px; font-size: 13px; border: 1px dashed #ced4da; }
+        
+        .hidden { display: none; }
+        .loading { text-align: center; color: #747d8c; padding: 40px; font-style: italic; }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen" class="auth-container">
+        <h2>С возвращением!</h2>
+        <input type="email" id="login-email" placeholder="Email аккаунта">
+        <input type="password" id="login-password" placeholder="Пароль">
+        <button onclick="login()">Войти в почту</button>
+        <a class="switch-link" onclick="switchScreen('register-screen')">Создать новый аккаунт</a>
+    </div>
+
+    <div id="register-screen" class="auth-container hidden">
+        <h2>Регистрация</h2>
+        <p style="font-size: 13px; color: #666;">Данные аккаунта:</p>
+        <input type="email" id="reg-email" placeholder="Email для входа">
+        <input type="password" id="reg-password" placeholder="Пароль для входа">
+        
+        <p style="font-size: 13px; color: #666; margin-top: 15px;">Настройки подключаемой почты:</p>
+        <input type="email" id="mail-user" placeholder="Ваш реальный ящик (например, @mail.ru)">
+        <input type="password" id="mail-pass" placeholder="Пароль приложения (16 знаков)">
+        <select id="mail-host">
+            <option value="imap.mail.ru">Mail.ru</option>
+            <option value="imap.yandex.ru">Yandex</option>
+            <option value="imap.gmail.com">Gmail</option>
+            <option value="outlook.office365.com">Outlook</option>
+        </select>
+        
+        <button onclick="register()">Создать и подключить</button>
+        <a class="switch-link" onclick="switchScreen('login-screen')">Уже есть аккаунт</a>
+    </div>
+
+    <div id="app-screen" class="hidden">
+        <div class="header">
+            <div>
+                <h1 style="margin:0;">Inbox</h1>
+                <span id="user-display" style="color:#747d8c;"></span>
+            </div>
+            <button class="logout-btn" onclick="logout()">Выйти</button>
+        </div>
+        <div id="email-list" class="email-container"></div>
+    </div>
+
+    <script>
+        const API_URL = '/api';
+        let currentUserEmail = '';
+
+        function switchScreen(id) {
+            document.querySelectorAll('.auth-container, #app-screen').forEach(el => el.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        async function register() {
+            const body = {
+                email: document.getElementById('reg-email').value,
+                password: document.getElementById('reg-password').value,
+                mail_user: document.getElementById('mail-user').value,
+                mail_pass: document.getElementById('mail-pass').value,
+                mail_host: document.getElementById('mail-host').value
+            };
+
+            const res = await fetch(`${API_URL}/register`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(body)
+            });
+            const data = await res.json();
+            alert(data.message);
+            if (res.ok) switchScreen('login-screen');
+        }
+
+        async function login() {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            const res = await fetch(`${API_URL}/login`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ email, password })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                currentUserEmail = data.email;
+                document.getElementById('user-display').innerText = currentUserEmail;
+                switchScreen('app-screen');
+                fetchEmails();
+            } else {
+                alert("Ошибка входа");
+            }
+        }
+
+        async function fetchEmails() {
+            const list = document.getElementById('email-list');
+            list.innerHTML = '<div class="loading">📡 Подключаемся к вашему почтовому серверу...</div>';
+
+            try {
+                const res = await fetch(`${API_URL}/emails`, {
+                    headers: { 'x-user-email': currentUserEmail }
+                });
+                const emails = await res.json();
+                list.innerHTML = "";
+
+                emails.forEach(mail => {
+                    list.innerHTML += `
+                        <div class="email-card">
+                            <span class="date">${mail.date}</span>
+                            <span class="sender">${mail.sender}</span>
+                            <h3 class="subject">${mail.subject}</h3>
+                            <p class="body">${mail.body}</p>
+                            <div class="ai-tag">✨ Авто-обработка: Письмо загружено из ${document.getElementById('mail-host').value}</div>
+                        </div>
+                    `;
+                });
+            } catch (e) {
+                list.innerHTML = '<p style="text-align:center;color:red;">❌ Ошибка подключения к почте. Проверьте пароль приложения.</p>';
+            }
+        }
+
+        function logout() {
+            switchScreen('login-screen');
+        }
+    </script>
+</body>
+</html>
