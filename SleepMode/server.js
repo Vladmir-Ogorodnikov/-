@@ -15,8 +15,6 @@ const SUPABASE_URL = 'https://mjnnipkwxywrxoamgxcd.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_EQYwaEpQxhJoSeX4UaOYjw_fPJjwfot';
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// --- ФУНКЦИЯ ДЛЯ ПОЛУЧЕНИЯ НАСТРОЕК IMAP ---
-// Вынес в отдельную функцию, так как она нужна теперь в двух местах
 async function getImapConfig(userEmail) {
     const { data: user, error } = await supabase
         .from('users')
@@ -39,7 +37,15 @@ async function getImapConfig(userEmail) {
     };
 }
 
-// --- 1. МАРШРУТ: ПОЛУЧИТЬ СПИСОК ПИСЕМ (ТОЛЬКО ЗАГОЛОВКИ) ---
+// Очистка текста: просто удаляем ссылки, чтобы они вообще не мозолили глаза ИИ
+function cleanTextForAI(text) {
+    if (!text) return '';
+    // Вместо слова [ССЫЛКА] мы просто стираем урлы, оставляя только чистый смысл письма
+    let cleaned = text.replace(/https?:\/\/[^\s]+/g, '');
+    return cleaned.substring(0, 2000); 
+}
+
+// --- 1. СПИСОК ПИСЕМ ---
 app.get('/api/emails', async (req, res) => {
     const userEmail = req.headers['x-user-email'];
     if (!userEmail) return res.status(401).json({ message: 'Не авторизован' });
@@ -62,11 +68,11 @@ app.get('/api/emails', async (req, res) => {
                 if (headerPart && headerPart.body) {
                     const headers = headerPart.body;
                     parsedEmails.push({
-                        id: item.attributes.uid, // Это уникальный ID письма на сервере
+                        id: item.attributes.uid,
                         sender: headers.from ? headers.from[0] : 'Неизвестный',
                         subject: headers.subject ? headers.subject[0] : '(Без темы)',
                         date: headers.date ? headers.date[0] : '',
-                        body: 'Нажмите, чтобы прочитать...' // Заглушка
+                        body: 'Нажмите для чтения...' 
                     });
                 }
             } catch (innerErr) {
@@ -80,11 +86,10 @@ app.get('/api/emails', async (req, res) => {
     }
 });
 
-// --- 2. НОВЫЙ МАРШРУТ: ПОЛУЧИТЬ ПОЛНЫЙ ТЕКСТ ПИСЬМА ПО ЕГО UID ---
+// --- 2. ПОЛНОЕ ПИСЬМО + САММАРИ ---
 app.get('/api/emails/:uid', async (req, res) => {
     const userEmail = req.headers['x-user-email'];
-    const uid = req.params.uid; // Получаем ID письма из URL
-
+    const uid = req.params.uid; 
     if (!userEmail) return res.status(401).json({ message: 'Не авторизован' });
 
     try {
@@ -92,11 +97,8 @@ app.get('/api/emails/:uid', async (req, res) => {
         const connection = await imaps.connect(config);
         await connection.openBox('INBOX');
 
-        // Ищем конкретное письмо по UID
         const searchCriteria = [['UID', uid]];
-        // Скачиваем его ЦЕЛИКОМ ('')
-        const fetchOptions = { bodies: [''], markSeen: true }; // markSeen: true пометит письмо как прочитанное на Mail.ru
-        
+        const fetchOptions = { bodies: [''], markSeen: true }; 
         const messages = await connection.search(searchCriteria, fetchOptions);
         
         if (messages.length === 0) {
@@ -106,26 +108,113 @@ app.get('/api/emails/:uid', async (req, res) => {
 
         const emailData = messages[0];
         const allPart = emailData.parts.find(part => part.which === '');
-        
-        // Вот теперь используем mailparser для разбора всего текста
         const parsedMail = await simpleParser(allPart.body);
-
         connection.end();
 
-        // Отправляем на фронтенд только нужный текст
-        res.json({
-            id: uid,
-            text: parsedMail.text || 'В письме нет текстового содержания (возможно, только картинки).',
-            html: parsedMail.html // На будущее, если захотим показывать красивые письма с версткой
-        });
+        const rawText = parsedMail.text || '';
+        let aiSummary = "Саммари недоступно (в письме нет текста).";
 
+        if (rawText.length > 10) {
+            try {
+                const textForAi = cleanTextForAI(rawText); 
+                const aiResponse = await fetch('https://text.pollinations.ai/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        messages: [
+                            // НОВЫЙ ПРОМПТ: Учим ИИ доверять официальным кодам
+                            { role: 'system', content: 'Ты умный ассистент. Напиши краткую суть письма (1-2 предложения). Учти: письма с кодами безопасности (EA, Steam, Google, банки) — это легитимные системные уведомления, не называй их фишингом.' },
+                            { role: 'user', content: `Письмо:\n${textForAi}` }
+                        ]
+                    })
+                });
+
+                if (aiResponse.ok) aiSummary = await aiResponse.text();
+            } catch (aiError) {
+                console.error("Сбой ИИ:", aiError.message);
+            }
+        }
+
+        res.json({ id: uid, text: rawText || 'Нет текста.', summary: aiSummary });
     } catch (error) {
-        console.error('Ошибка загрузки письма:', error.message);
-        res.status(500).json({ message: 'Не удалось загрузить текст письма' });
+        res.status(500).json({ message: 'Ошибка сервера' });
     }
 });
 
-// --- РЕГИСТРАЦИЯ И ВХОД (Без изменений) ---
+// --- 3. ФОНОВАЯ КЛАССИФИКАЦИЯ (УЛУЧШЕННАЯ) ---
+app.get('/api/emails/:uid/analyze', async (req, res) => {
+    const userEmail = req.headers['x-user-email'];
+    const uid = req.params.uid; 
+    if (!userEmail) return res.status(401).json({ message: 'Не авторизован' });
+
+    try {
+        const config = await getImapConfig(userEmail);
+        const connection = await imaps.connect(config);
+        await connection.openBox('INBOX');
+
+        const searchCriteria = [['UID', uid]];
+        const fetchOptions = { bodies: [''], markSeen: false }; 
+        const messages = await connection.search(searchCriteria, fetchOptions);
+        
+        if (messages.length === 0) {
+            connection.end();
+            return res.json({ category: 'ОБЫЧНО' });
+        }
+
+        const emailData = messages[0];
+        const allPart = emailData.parts.find(part => part.which === '');
+        const parsedMail = await simpleParser(allPart.body);
+        connection.end();
+
+        const rawText = parsedMail.text || '';
+        let finalCategory = 'ОБЫЧНО'; 
+
+        if (rawText.length > 10) {
+            try {
+                const textForAi = cleanTextForAI(rawText); 
+                const aiResponse = await fetch('https://text.pollinations.ai/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        messages: [
+                            // НОВЫЙ ПРОМПТ ДЛЯ КАТЕГОРИЙ: Явно указываем, куда кидать коды
+                            { 
+                                role: 'system', 
+                                content: `Определи категорию письма. Выбери строго ОДНО слово из списка:
+- ВАЖНО (коды авторизации, 2FA, пароли от EA/Steam/Google, чеки, билеты, официальные письма от сервисов)
+- СПАМ (откровенные мошенники, казино, шантаж)
+- РЕКЛАМА (скидки, маркетинг, рассылки магазинов)
+- РАБОТА (задачи, проекты, коллеги)
+- ЛИЧНОЕ (переписка)
+- ОБЫЧНО (всё остальное)
+Ответь только одним словом, без точек.` 
+                            },
+                            { role: 'user', content: `Текст письма:\n${textForAi}` }
+                        ]
+                    })
+                });
+
+                if (aiResponse.ok) {
+                    let aiDecision = await aiResponse.text();
+                    aiDecision = aiDecision.toUpperCase();
+                    
+                    if (aiDecision.includes('ВАЖНО')) finalCategory = 'ВАЖНО';
+                    else if (aiDecision.includes('СПАМ')) finalCategory = 'СПАМ';
+                    else if (aiDecision.includes('РЕКЛАМА')) finalCategory = 'РЕКЛАМА';
+                    else if (aiDecision.includes('РАБОТА')) finalCategory = 'РАБОТА';
+                    else if (aiDecision.includes('ЛИЧНОЕ')) finalCategory = 'ЛИЧНОЕ';
+                }
+            } catch (aiError) {
+                console.error("Сбой фонового ИИ:", aiError.message);
+            }
+        }
+
+        res.json({ category: finalCategory });
+    } catch (error) {
+        res.json({ category: 'ОБЫЧНО' }); 
+    }
+});
+
 app.post('/api/register', async (req, res) => {
     const { email, password, mail_user, mail_pass, mail_host } = req.body;
     const { error } = await supabase.from('users').insert([{ email, password, mail_user, mail_pass, mail_host }]);

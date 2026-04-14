@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Multi-Mail Client</title>
+    <title>Multi-Mail Client + AI Categories</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; }
         .auth-container { max-width: 450px; margin: 50px auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); text-align: center; }
@@ -17,17 +17,49 @@
         
         .email-container { max-width: 800px; margin: 0 auto; }
         
-        /* Добавлен cursor: pointer для карточки */
-        .email-card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; border-left: 6px solid #007bff; cursor: pointer; transition: 0.2s; }
+        .email-card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; border-left: 6px solid #007bff; cursor: pointer; transition: 0.3s ease; position: relative; }
         .email-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         
+        /* --- ЦВЕТА КАТЕГОРИЙ --- */
+        .category-badge { display: none; padding: 3px 8px; border-radius: 4px; font-size: 11px; text-transform: uppercase; font-weight: bold; margin-left: 10px; vertical-align: text-bottom; }
+        .email-card.cat-ВАЖНО { border-left-color: #ff4757; background-color: #fff9fa; }
+        .email-card.cat-ВАЖНО .category-badge { display: inline-block; background: #ff4757; color: white; }
+        .email-card.cat-РАБОТА { border-left-color: #2ed573; }
+        .email-card.cat-РАБОТА .category-badge { display: inline-block; background: #2ed573; color: white; }
+        .email-card.cat-РЕКЛАМА { border-left-color: #ffa502; background-color: #fffdf5; }
+        .email-card.cat-РЕКЛАМА .category-badge { display: inline-block; background: #ffa502; color: white; }
+        .email-card.cat-ЛИЧНОЕ { border-left-color: #3742fa; }
+        .email-card.cat-ЛИЧНОЕ .category-badge { display: inline-block; background: #3742fa; color: white; }
+        .email-card.cat-СПАМ { border-left-color: #747d8c; opacity: 0.8; }
+        .email-card.cat-СПАМ .category-badge { display: inline-block; background: #747d8c; color: white; }
+        .email-card.cat-ОБЫЧНО { border-left-color: #ced6e0; }
+        .email-card.cat-ОБЫЧНО .category-badge { display: inline-block; background: #f1f2f6; color: #57606f; }
+
+        .ai-status { font-size: 12px; color: #a4b0be; float: right; margin-left: 15px; font-style: italic; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+
         .sender { font-weight: bold; color: #2f3542; display: block; margin-bottom: 5px; }
         .date { color: #a4b0be; font-size: 12px; float: right; }
         .subject { margin: 10px 0; color: #2f3542; font-size: 18px; }
         
-        /* Стили для текста письма */
-        .body { color: #57606f; line-height: 1.5; font-size: 14px; white-space: pre-wrap; /* Сохраняем абзацы */ }
+        .body { color: #57606f; line-height: 1.5; font-size: 14px; white-space: pre-wrap; }
         .email-text-content { margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee; display: none; }
+        
+        .ai-summary-box { background: #f0f7ff; border-left: 4px solid #007bff; padding: 15px; margin-bottom: 15px; border-radius: 8px; font-size: 14px; color: #004085; line-height: 1.5; }
+        
+        /* НОВЫЙ ДИЗАЙН ДЛЯ ТЕКСТА ПИСЬМА */
+        .original-text { 
+            white-space: pre-wrap;     /* Сохраняем абзацы */
+            word-wrap: break-word;     /* РАЗРУБАЕМ ДЛИННЫЕ ССЫЛКИ */
+            overflow-wrap: break-word; 
+            background: #ffffff;       /* Белый фон для чтения */
+            padding: 20px; 
+            border-radius: 8px; 
+            border: 1px solid #e1e8ed; 
+            color: #2f3542; 
+            font-family: inherit; 
+            line-height: 1.6;
+        }
         
         .hidden { display: none; }
         .loading { text-align: center; color: #747d8c; padding: 40px; font-style: italic; }
@@ -45,10 +77,8 @@
 
     <div id="register-screen" class="auth-container hidden">
         <h2>Регистрация</h2>
-        <p style="font-size: 13px; color: #666;">Данные аккаунта:</p>
         <input type="email" id="reg-email" placeholder="Email для входа">
         <input type="password" id="reg-password" placeholder="Пароль для входа">
-        
         <p style="font-size: 13px; color: #666; margin-top: 15px;">Настройки подключаемой почты:</p>
         <input type="email" id="mail-user" placeholder="Ваш реальный ящик (например, @mail.ru)">
         <input type="password" id="mail-pass" placeholder="Пароль приложения (16 знаков)">
@@ -58,7 +88,6 @@
             <option value="imap.gmail.com">Gmail</option>
             <option value="outlook.office365.com">Outlook</option>
         </select>
-        
         <button onclick="register()">Создать и подключить</button>
         <a class="switch-link" onclick="switchScreen('login-screen')">Уже есть аккаунт</a>
     </div>
@@ -66,7 +95,7 @@
     <div id="app-screen" class="hidden">
         <div class="header">
             <div>
-                <h1 style="margin:0;">Inbox</h1>
+                <h1 style="margin:0;">Inbox <span style="font-size: 14px; background: #007bff; color: white; padding: 3px 8px; border-radius: 12px; vertical-align: middle;">AI Categories</span></h1>
                 <span id="user-display" style="color:#747d8c;"></span>
             </div>
             <button class="logout-btn" onclick="logout()">Выйти</button>
@@ -85,18 +114,10 @@
 
         async function register() {
             const body = {
-                email: document.getElementById('reg-email').value,
-                password: document.getElementById('reg-password').value,
-                mail_user: document.getElementById('mail-user').value,
-                mail_pass: document.getElementById('mail-pass').value,
-                mail_host: document.getElementById('mail-host').value
+                email: document.getElementById('reg-email').value, password: document.getElementById('reg-password').value,
+                mail_user: document.getElementById('mail-user').value, mail_pass: document.getElementById('mail-pass').value, mail_host: document.getElementById('mail-host').value
             };
-
-            const res = await fetch(`${API_URL}/register`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(body)
-            });
+            const res = await fetch(`${API_URL}/register`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
             const data = await res.json();
             alert(data.message);
             if (res.ok) switchScreen('login-screen');
@@ -105,13 +126,7 @@
         async function login() {
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
-
-            const res = await fetch(`${API_URL}/login`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ email, password })
-            });
-
+            const res = await fetch(`${API_URL}/login`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ email, password }) });
             if (res.ok) {
                 const data = await res.json();
                 currentUserEmail = data.email;
@@ -125,73 +140,92 @@
 
         async function fetchEmails() {
             const list = document.getElementById('email-list');
-            list.innerHTML = '<div class="loading">📡 Подключаемся к вашему почтовому серверу...</div>';
-
+            list.innerHTML = '<div class="loading">📡 Подключаемся к почте...</div>';
             try {
-                const res = await fetch(`${API_URL}/emails`, {
-                    headers: { 'x-user-email': currentUserEmail }
-                });
+                const res = await fetch(`${API_URL}/emails`, { headers: { 'x-user-email': currentUserEmail } });
                 const emails = await res.json();
                 list.innerHTML = "";
-
+                
                 emails.forEach(mail => {
-                    // Добавили onclick для вызова функции загрузки текста
                     list.innerHTML += `
-                        <div class="email-card" onclick="loadFullEmail(${mail.id}, this)">
+                        <div class="email-card" id="card-${mail.id}" onclick="loadFullEmail(${mail.id}, this)">
+                            <span class="ai-status" id="status-${mail.id}">✨ ИИ анализирует...</span>
                             <span class="date">${mail.date}</span>
-                            <span class="sender">${mail.sender}</span>
+                            <span class="sender">
+                                ${mail.sender} 
+                                <span class="category-badge" id="badge-${mail.id}"></span>
+                            </span>
                             <h3 class="subject">${mail.subject}</h3>
                             <p class="body" id="preview-${mail.id}">${mail.body}</p>
-                            
-                            <div class="email-text-content" id="full-text-${mail.id}">
-                                ⏳ Загрузка текста с сервера...
-                            </div>
+                            <div class="email-text-content" id="full-text-${mail.id}"></div>
                         </div>
                     `;
                 });
-            } catch (e) {
-                list.innerHTML = '<p style="text-align:center;color:red;">❌ Ошибка подключения к почте.</p>';
+
+                analyzeEmailsInBackground(emails);
+            } catch (e) { list.innerHTML = '<p style="text-align:center;color:red;">❌ Ошибка загрузки списка.</p>'; }
+        }
+
+        async function analyzeEmailsInBackground(emails) {
+            const categoryEmojis = {
+                'ВАЖНО': '🔥', 'РАБОТА': '💼', 'РЕКЛАМА': '🏷️', 'СПАМ': '🗑️', 'ЛИЧНОЕ': '💬', 'ОБЫЧНО': '📫'
+            };
+
+            for (let mail of emails) {
+                try {
+                    const res = await fetch(`${API_URL}/emails/${mail.id}/analyze`, { 
+                        headers: { 'x-user-email': currentUserEmail } 
+                    });
+                    const data = await res.json();
+                    
+                    const card = document.getElementById(`card-${mail.id}`);
+                    const badge = document.getElementById(`badge-${mail.id}`);
+                    const statusText = document.getElementById(`status-${mail.id}`);
+                    
+                    statusText.style.display = 'none';
+
+                    if (data.category) {
+                        card.classList.add(`cat-${data.category}`);
+                        const emoji = categoryEmojis[data.category] || '';
+                        badge.innerText = `${emoji} ${data.category}`;
+                    }
+                } catch (error) {
+                    console.log(`Ошибка анализа ${mail.id}`);
+                    document.getElementById(`status-${mail.id}`).style.display = 'none';
+                }
             }
         }
 
-        // --- НОВАЯ ФУНКЦИЯ ДЛЯ ЗАГРУЗКИ ПОЛНОГО ТЕКСТА ---
         async function loadFullEmail(uid, cardElement) {
             const previewText = document.getElementById(`preview-${uid}`);
             const fullTextContainer = document.getElementById(`full-text-${uid}`);
 
-            // Если письмо уже открыто - закрываем
             if (fullTextContainer.style.display === 'block') {
                 fullTextContainer.style.display = 'none';
                 previewText.style.display = 'block';
                 return;
             }
 
-            // Показываем блок загрузки
             previewText.style.display = 'none';
             fullTextContainer.style.display = 'block';
-            fullTextContainer.innerHTML = '⏳ Скачивание текста с сервера...';
+            fullTextContainer.innerHTML = '🤖 <i>ИИ готовит выжимку...</i>';
 
             try {
-                // Делаем запрос к новому API
-                const res = await fetch(`${API_URL}/emails/${uid}`, {
-                    headers: { 'x-user-email': currentUserEmail }
-                });
-                
-                if (!res.ok) throw new Error('Ошибка сервера');
-                
+                const res = await fetch(`${API_URL}/emails/${uid}`, { headers: { 'x-user-email': currentUserEmail } });
                 const data = await res.json();
                 
-                // Вставляем текст
-                fullTextContainer.innerText = data.text;
-                
-            } catch (error) {
-                fullTextContainer.innerHTML = '<span style="color:red">❌ Не удалось загрузить текст письма.</span>';
-            }
+                // ВАЖНО: Используем класс original-text, который мы настроили в CSS
+                fullTextContainer.innerHTML = `
+                    <div class="ai-summary-box">
+                        <div class="ai-title">✨ AI Саммари:</div>
+                        ${data.summary}
+                    </div>
+                    <div class="original-text">${data.text}</div>
+                `;
+            } catch (error) { fullTextContainer.innerHTML = '<span style="color:red">❌ Ошибка загрузки.</span>'; }
         }
 
-        function logout() {
-            switchScreen('login-screen');
-        }
+        function logout() { switchScreen('login-screen'); }
     </script>
 </body>
 </html>
