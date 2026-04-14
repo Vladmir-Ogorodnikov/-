@@ -16,12 +16,18 @@
         .logout-btn { width: auto; background-color: #ff4757; padding: 8px 15px; margin: 0; }
         
         .email-container { max-width: 800px; margin: 0 auto; }
-        .email-card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; border-left: 6px solid #007bff; }
+        
+        /* Добавлен cursor: pointer для карточки */
+        .email-card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; border-left: 6px solid #007bff; cursor: pointer; transition: 0.2s; }
+        .email-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        
         .sender { font-weight: bold; color: #2f3542; display: block; margin-bottom: 5px; }
         .date { color: #a4b0be; font-size: 12px; float: right; }
         .subject { margin: 10px 0; color: #2f3542; font-size: 18px; }
-        .body { color: #57606f; line-height: 1.5; font-size: 14px; }
-        .ai-tag { margin-top: 15px; padding: 8px; background: #f1f2f6; border-radius: 5px; font-size: 13px; border: 1px dashed #ced4da; }
+        
+        /* Стили для текста письма */
+        .body { color: #57606f; line-height: 1.5; font-size: 14px; white-space: pre-wrap; /* Сохраняем абзацы */ }
+        .email-text-content { margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee; display: none; }
         
         .hidden { display: none; }
         .loading { text-align: center; color: #747d8c; padding: 40px; font-style: italic; }
@@ -129,18 +135,57 @@
                 list.innerHTML = "";
 
                 emails.forEach(mail => {
+                    // Добавили onclick для вызова функции загрузки текста
                     list.innerHTML += `
-                        <div class="email-card">
+                        <div class="email-card" onclick="loadFullEmail(${mail.id}, this)">
                             <span class="date">${mail.date}</span>
                             <span class="sender">${mail.sender}</span>
                             <h3 class="subject">${mail.subject}</h3>
-                            <p class="body">${mail.body}</p>
-                            <div class="ai-tag">✨ Авто-обработка: Письмо загружено из ${document.getElementById('mail-host').value}</div>
+                            <p class="body" id="preview-${mail.id}">${mail.body}</p>
+                            
+                            <div class="email-text-content" id="full-text-${mail.id}">
+                                ⏳ Загрузка текста с сервера...
+                            </div>
                         </div>
                     `;
                 });
             } catch (e) {
-                list.innerHTML = '<p style="text-align:center;color:red;">❌ Ошибка подключения к почте. Проверьте пароль приложения.</p>';
+                list.innerHTML = '<p style="text-align:center;color:red;">❌ Ошибка подключения к почте.</p>';
+            }
+        }
+
+        // --- НОВАЯ ФУНКЦИЯ ДЛЯ ЗАГРУЗКИ ПОЛНОГО ТЕКСТА ---
+        async function loadFullEmail(uid, cardElement) {
+            const previewText = document.getElementById(`preview-${uid}`);
+            const fullTextContainer = document.getElementById(`full-text-${uid}`);
+
+            // Если письмо уже открыто - закрываем
+            if (fullTextContainer.style.display === 'block') {
+                fullTextContainer.style.display = 'none';
+                previewText.style.display = 'block';
+                return;
+            }
+
+            // Показываем блок загрузки
+            previewText.style.display = 'none';
+            fullTextContainer.style.display = 'block';
+            fullTextContainer.innerHTML = '⏳ Скачивание текста с сервера...';
+
+            try {
+                // Делаем запрос к новому API
+                const res = await fetch(`${API_URL}/emails/${uid}`, {
+                    headers: { 'x-user-email': currentUserEmail }
+                });
+                
+                if (!res.ok) throw new Error('Ошибка сервера');
+                
+                const data = await res.json();
+                
+                // Вставляем текст
+                fullTextContainer.innerText = data.text;
+                
+            } catch (error) {
+                fullTextContainer.innerHTML = '<span style="color:red">❌ Не удалось загрузить текст письма.</span>';
             }
         }
 
