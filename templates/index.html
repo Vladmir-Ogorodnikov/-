@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Analyzer</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div id="app">
+        <div id="auth-section" class="container">
+            <h1>Email Analyzer</h1>
+            <p>Анализируй свои письма с помощью AI</p>
+            <button id="login-btn" class="btn btn-primary">Войти через Google</button>
+        </div>
+
+        <div id="main-section" class="container" style="display: none;">
+            <header>
+                <h1>Email Analyzer</h1>
+                <div class="user-info">
+                    <span id="user-email"></span>
+                    <button id="logout-btn" class="btn btn-secondary">Выход</button>
+                </div>
+            </header>
+
+            <div class="actions">
+                <button id="parse-btn" class="btn btn-primary">Загрузить письма</button>
+                <button id="analyze-btn" class="btn btn-success">Анализировать письма</button>
+                <label class="checkbox">
+                    <input type="checkbox" id="key-only-filter">
+                    Только ключевые письма
+                </label>
+            </div>
+
+            <div id="loading" style="display: none;">
+                <div class="spinner"></div>
+                <p>Загрузка...</p>
+            </div>
+
+            <div id="emails-container"></div>
+        </div>
+
+        <div id="email-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <div id="email-detail"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/email.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
