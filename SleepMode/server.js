@@ -11,19 +11,19 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public')); 
 
+// Подключение к Supabase
 const SUPABASE_URL = 'https://mjnnipkwxywrxoamgxcd.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_EQYwaEpQxhJoSeX4UaOYjw_fPJjwfot';
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// --- ДИНАМИЧЕСКИЙ ПАРСИНГ ПОЧТЫ ---
+// --- ДИНАМИЧЕСКИЙ ПАРСИНГ ПОЧТЫ С ЗАЩИТОЙ ПАМЯТИ ---
 app.get('/api/emails', async (req, res) => {
-    // Получаем email пользователя из заголовков (передадим с фронтенда)
     const userEmail = req.headers['x-user-email'];
 
     if (!userEmail) return res.status(401).json({ message: 'Не авторизован' });
 
     try {
-        // 1. Ищем настройки почты этого пользователя в базе
+        // 1. Ищем настройки пользователя
         const { data: user, error } = await supabase
             .from('users')
             .select('mail_user, mail_pass, mail_host')
@@ -46,34 +46,49 @@ app.get('/api/emails', async (req, res) => {
             }
         };
 
-        // 2. Подключаемся к его почте
+        // 2. Подключаемся к почте
         const connection = await imaps.connect(config);
         await connection.openBox('INBOX');
 
-        const fetchOptions = { bodies: ['HEADER', 'TEXT', ''], markSeen: false };
+        // ЗАЩИТА: Запрашиваем ТОЛЬКО заголовки писем, чтобы сервер не упал от нехватки памяти
+        const fetchOptions = { 
+            bodies: ['HEADER.FIELDS (FROM TO SUBJECT DATE)'], 
+            struct: true,
+            markSeen: false
+        };
         const searchCriteria = ['ALL'];
         const messages = await connection.search(searchCriteria, fetchOptions);
         
+        // Берем последние 5 писем
         const lastMessages = messages.slice(-5).reverse();
         const parsedEmails = [];
 
         for (let item of lastMessages) {
-            const all = item.parts.find(part => part.which === '');
-            const mail = await simpleParser(all.body);
-            
-            parsedEmails.push({
-                id: item.attributes.uid,
-                sender: mail.from.text,
-                subject: mail.subject || '(Без темы)',
-                date: mail.date ? mail.date.toLocaleString('ru-RU') : '',
-                body: mail.text ? mail.text.substring(0, 200) + '...' : ''
-            });
+            try {
+                // ЗАЩИТА: Безопасный поиск заголовков
+                const headerPart = item.parts.find(part => part.which.includes('HEADER'));
+                
+                if (headerPart && headerPart.body) {
+                    const mail = await simpleParser(headerPart.body);
+                    
+                    parsedEmails.push({
+                        id: item.attributes.uid,
+                        sender: mail.from ? mail.from.text : 'Неизвестный отправитель',
+                        subject: mail.subject || '(Без темы)',
+                        date: mail.date ? mail.date.toLocaleString('ru-RU') : '',
+                        body: 'Нажмите, чтобы загрузить текст письма...' 
+                    });
+                }
+            } catch (innerErr) {
+                console.error(`Ошибка при обработке письма UID ${item.attributes.uid}:`, innerErr.message);
+                continue; // Если одно письмо сломалось, пропускаем его и идем дальше
+            }
         }
 
         connection.end();
         res.json(parsedEmails);
     } catch (error) {
-        console.error('Ошибка IMAP:', error);
+        console.error('Ошибка IMAP:', error.message);
         res.status(500).json({ message: 'Ошибка доступа к почтовому ящику' });
     }
 });
