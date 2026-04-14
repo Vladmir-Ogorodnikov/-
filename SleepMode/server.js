@@ -23,7 +23,6 @@ app.get('/api/emails', async (req, res) => {
     if (!userEmail) return res.status(401).json({ message: 'Не авторизован' });
 
     try {
-        // 1. Ищем настройки пользователя
         const { data: user, error } = await supabase
             .from('users')
             .select('mail_user, mail_pass, mail_host')
@@ -46,27 +45,24 @@ app.get('/api/emails', async (req, res) => {
             }
         };
 
-        // 2. Подключаемся к почте
         const connection = await imaps.connect(config);
         await connection.openBox('INBOX');
 
-        // ЗАЩИТА: Запрашиваем ТОЛЬКО заголовки писем, чтобы сервер не упал от нехватки памяти
+        // ИСПРАВЛЕНИЕ: Запрашиваем стандартный 'HEADER'. Он универсален и не вешает память.
         const fetchOptions = { 
-            bodies: ['HEADER.FIELDS (FROM TO SUBJECT DATE)'], 
-            struct: true,
+            bodies: ['HEADER'], 
             markSeen: false
         };
         const searchCriteria = ['ALL'];
         const messages = await connection.search(searchCriteria, fetchOptions);
         
-        // Берем последние 5 писем
         const lastMessages = messages.slice(-5).reverse();
         const parsedEmails = [];
 
         for (let item of lastMessages) {
             try {
-                // ЗАЩИТА: Безопасный поиск заголовков
-                const headerPart = item.parts.find(part => part.which.includes('HEADER'));
+                // ИСПРАВЛЕНИЕ: Ищем часть, которая точно называется 'HEADER'
+                const headerPart = item.parts.find(part => part.which === 'HEADER');
                 
                 if (headerPart && headerPart.body) {
                     const mail = await simpleParser(headerPart.body);
@@ -78,10 +74,12 @@ app.get('/api/emails', async (req, res) => {
                         date: mail.date ? mail.date.toLocaleString('ru-RU') : '',
                         body: 'Нажмите, чтобы загрузить текст письма...' 
                     });
+                } else {
+                    console.log(`⚠️ Заголовок не найден для письма UID: ${item.attributes.uid}`);
                 }
             } catch (innerErr) {
                 console.error(`Ошибка при обработке письма UID ${item.attributes.uid}:`, innerErr.message);
-                continue; // Если одно письмо сломалось, пропускаем его и идем дальше
+                continue; 
             }
         }
 
