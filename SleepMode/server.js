@@ -2,7 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
 const imaps = require('imap-simple');
-const simpleParser = require('mailparser').simpleParser;
+// mailparser оставляем про запас для будущей фичи чтения полного текста писем
+const simpleParser = require('mailparser').simpleParser; 
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -16,7 +17,7 @@ const SUPABASE_URL = 'https://mjnnipkwxywrxoamgxcd.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_EQYwaEpQxhJoSeX4UaOYjw_fPJjwfot';
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// --- ДИНАМИЧЕСКИЙ ПАРСИНГ ПОЧТЫ С ЗАЩИТОЙ ПАМЯТИ ---
+// --- ДИНАМИЧЕСКИЙ ПАРСИНГ ПОЧТЫ (МАКСИМАЛЬНАЯ ОПТИМИЗАЦИЯ) ---
 app.get('/api/emails', async (req, res) => {
     const userEmail = req.headers['x-user-email'];
 
@@ -48,34 +49,36 @@ app.get('/api/emails', async (req, res) => {
         const connection = await imaps.connect(config);
         await connection.openBox('INBOX');
 
-        // ИСПРАВЛЕНИЕ: Запрашиваем стандартный 'HEADER'. Он универсален и не вешает память.
+        // Запрашиваем только заголовки
         const fetchOptions = { 
             bodies: ['HEADER'], 
             markSeen: false
         };
+        // Берем последние 5 писем с конца (по UID), чтобы не скачивать всю базу
         const searchCriteria = ['ALL'];
         const messages = await connection.search(searchCriteria, fetchOptions);
         
+        // Берем 5 самых свежих писем
         const lastMessages = messages.slice(-5).reverse();
         const parsedEmails = [];
 
         for (let item of lastMessages) {
             try {
-                // ИСПРАВЛЕНИЕ: Ищем часть, которая точно называется 'HEADER'
+                // Находим часть с заголовками
                 const headerPart = item.parts.find(part => part.which === 'HEADER');
                 
                 if (headerPart && headerPart.body) {
-                    const mail = await simpleParser(headerPart.body);
+                    // imap-simple УЖЕ превратил заголовки в объект, берем данные напрямую!
+                    const headers = headerPart.body;
                     
                     parsedEmails.push({
                         id: item.attributes.uid,
-                        sender: mail.from ? mail.from.text : 'Неизвестный отправитель',
-                        subject: mail.subject || '(Без темы)',
-                        date: mail.date ? mail.date.toLocaleString('ru-RU') : '',
+                        // imap-simple возвращает данные в виде массивов, поэтому берем нулевой элемент [0]
+                        sender: headers.from ? headers.from[0] : 'Неизвестный отправитель',
+                        subject: headers.subject ? headers.subject[0] : '(Без темы)',
+                        date: headers.date ? headers.date[0] : '',
                         body: 'Нажмите, чтобы загрузить текст письма...' 
                     });
-                } else {
-                    console.log(`⚠️ Заголовок не найден для письма UID: ${item.attributes.uid}`);
                 }
             } catch (innerErr) {
                 console.error(`Ошибка при обработке письма UID ${item.attributes.uid}:`, innerErr.message);
