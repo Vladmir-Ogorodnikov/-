@@ -40,7 +40,6 @@
         .cat-filter:hover { background: #ced6e0; }
         .cat-filter.active { background: #2f3542; color: white; }
 
-        /* ПОИСКОВАЯ СТРОКА */
         .search-container { max-width: 800px; margin: 0 auto 20px auto; }
         .search-input { width: 100%; padding: 10px 16px; border-radius: 20px; border: 1px solid #ddd; background: white; font-size: 14px; outline: none; transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
         .search-input:focus { border-color: #007bff; box-shadow: 0 2px 8px rgba(0,123,255,0.1); }
@@ -67,7 +66,10 @@
 
         .ai-status { font-size: 12px; color: #a4b0be; float: right; margin-left: 15px; font-style: italic; animation: pulse 1.5s infinite; }
         
+        /* АНИМАЦИИ И ЗАГРУЗКА */
         @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        
         .skeleton { background: #e1e8ed; border-radius: 4px; animation: pulse 1.5s infinite; }
         .skeleton-card { background: white; padding: 20px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         .skeleton-title { height: 20px; width: 60%; margin-bottom: 10px; }
@@ -75,6 +77,10 @@
         .skeleton-text.short { width: 40%; margin-bottom: 15px; }
         .skeleton-badge { height: 16px; width: 80px; float: right; border-radius: 12px; }
         .skeleton-tab { height: 35px; width: 100px; border-radius: 20px; display: inline-block; margin-right: 10px; }
+
+        /* НОВЫЙ БАННЕР ЗАГРУЗКИ ДЛЯ ПОЛЬЗОВАТЕЛЕЙ */
+        .loading-banner { background: #e0f0ff; color: #0056b3; padding: 15px 20px; border-radius: 8px; margin-bottom: 15px; display: flex; align-items: center; gap: 12px; font-weight: bold; border: 1px solid #b8daff; box-shadow: 0 4px 12px rgba(0,123,255,0.1); animation: pulse 2s infinite; }
+        .loading-banner .spinner { display: inline-block; animation: spin 1.5s linear infinite; font-size: 20px; }
 
         .sender { font-weight: bold; color: #2f3542; display: block; margin-bottom: 5px; }
         .date { color: #a4b0be; font-size: 12px; float: right; }
@@ -308,16 +314,23 @@
 
         async function loadAccounts() {
             const container = document.getElementById('accounts-container');
+            const wrapper = document.getElementById('emails-wrapper');
+            
+            // ЯВНЫЙ БАННЕР ЗАГРУЗКИ (Для избежания эффекта пустого белого экрана)
             container.innerHTML = `
                 <div class="skeleton skeleton-tab"></div>
                 <div class="skeleton skeleton-tab" style="width: 140px;"></div>
-                <div class="skeleton skeleton-tab" style="width: 80px;"></div>
+            `;
+            wrapper.innerHTML = `
+                <div class="loading-banner" style="background: #f1f2f6; color: #57606f; border-color: #ced6e0;">
+                    <span class="spinner">⚙️</span> 
+                    <span>Загружаем ваш профиль и настройки ящиков...</span>
+                </div>
             `;
             
             const res = await fetch(`${API_URL}/accounts`, { headers: {'x-user-email': currentUserEmail} });
             const accounts = await res.json();
             container.innerHTML = '';
-            const wrapper = document.getElementById('emails-wrapper');
             wrapper.innerHTML = ''; 
             
             if (accounts.length > 0) {
@@ -358,8 +371,8 @@
             document.querySelectorAll('.email-container').forEach(list => list.classList.add('hidden'));
             document.getElementById(`email-list-${id}`).classList.remove('hidden');
             
-            document.getElementById('search-input').value = ''; // Сброс поиска
-            setCategoryFilter('ВСЕ', document.querySelector('.cat-filter')); // Сброс категории
+            document.getElementById('search-input').value = ''; 
+            setCategoryFilter('ВСЕ', document.querySelector('.cat-filter')); 
             
             if (!document.getElementById(`email-list-${id}`).dataset.loaded) fetchEmails(id); 
             else applyFilters();
@@ -372,7 +385,6 @@
             applyFilters();
         }
 
-        // ОБНОВЛЕННЫЙ ФИЛЬТР (Поиск + Категории)
         function applyFilters() {
             const activeList = document.getElementById(`email-list-${currentAccountId}`);
             if (!activeList) return;
@@ -397,7 +409,6 @@
                 }
             });
 
-            // Логика сообщения "Писем нет"
             let noMsg = activeList.querySelector('.no-emails-msg.filter-msg');
             if (visibleCount === 0 && cards.length > 0) {
                 if (!noMsg) {
@@ -484,7 +495,12 @@
         async function fetchEmails(accId) {
             const list = document.getElementById(`email-list-${accId}`);
             
+            // ЯВНЫЙ И КРАСИВЫЙ БАННЕР ЗАГРУЗКИ
             list.innerHTML = `
+                <div class="loading-banner">
+                    <span class="spinner">🔄</span> 
+                    <span>Подключаемся к почтовому серверу и скачиваем письма. Пожалуйста, подождите...</span>
+                </div>
                 <div class="skeleton-card">
                     <div class="skeleton skeleton-badge"></div>
                     <div class="skeleton skeleton-text short"></div>
@@ -515,7 +531,7 @@
                 emails.forEach(mail => {
                     const safeSender = mail.sender ? mail.sender.replace(/"/g, '&quot;') : 'Неизвестный';
                     const safeSubject = mail.subject ? mail.subject.replace(/"/g, '&quot;') : '(Без темы)';
-                    const niceDate = formatHumanDate(mail.date); // Применяем красивую дату
+                    const niceDate = formatHumanDate(mail.date);
 
                     list.innerHTML += `
                         <div class="email-card" id="card-${accId}-${mail.id}" data-category="PENDING" data-sender="${safeSender}" data-subject="${safeSubject}">
