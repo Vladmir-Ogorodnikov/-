@@ -1,6 +1,6 @@
 Сайт - https://project-mail-8fcb.onrender.com/ 
 
-Акк для тестов - MyTest@mail.ru 123123
+Акк для тестов - Test 123123
 
 ## 🔗 Подключение почтовых ящиков (Mail.ru и Gmail)
 
