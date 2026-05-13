@@ -23,7 +23,7 @@ async function getImapConfig(userEmail, accountId) {
         .eq('id', accountId)
         .eq('user_email', userEmail)
         .single();
-    if (error || !account) throw new Error('Настройки почты не найдены в базе данных');
+    if (error || !account) throw new Error('Настройки почты не найдены в БД');
     return {
         imap: {
             user: account.mail_user, password: account.mail_pass, host: account.mail_host,
@@ -34,19 +34,16 @@ async function getImapConfig(userEmail, accountId) {
 
 function cleanTextForAI(text) {
     if (!text) return '';
-    let cleaned = text.replace(/https?:\/\/[^\s]+/g, '').replace(/\s+/g, ' ');
-    return cleaned.substring(0, 2000); 
+    return text.replace(/https?:\/\/[^\s]+/g, '').replace(/\s+/g, ' ').substring(0, 2000); 
 }
 
 function extractTextFromMail(parsedMail) {
     let rawText = parsedMail.text || '';
-    if (!rawText && parsedMail.html) {
-        rawText = parsedMail.html.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ');
-    }
+    if (!rawText && parsedMail.html) rawText = parsedMail.html.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ');
     return rawText;
 }
 
-// УПРАВЛЕНИЕ ЯЩИКАМИ
+// --- УПРАВЛЕНИЕ АККАУНТАМИ ---
 app.get('/api/accounts', async (req, res) => {
     const userEmail = req.headers['x-user-email'];
     if (!userEmail) return res.status(401).json({ message: 'Не авторизован' });
@@ -61,7 +58,7 @@ app.post('/api/accounts', async (req, res) => {
     if (!userEmail) return res.status(401).json({ message: 'Не авторизован' });
     const { error } = await supabase.from('connected_accounts').insert([{ user_email: userEmail, mail_user, mail_pass, mail_host, title }]);
     if (error) return res.status(400).json({ message: error.message }); 
-    res.json({ message: 'Ящик успешно добавлен!' });
+    res.json({ message: 'Ящик добавлен!' });
 });
 
 app.delete('/api/accounts/:id', async (req, res) => {
@@ -70,7 +67,7 @@ app.delete('/api/accounts/:id', async (req, res) => {
     if (!userEmail) return res.status(401).json({ message: 'Не авторизован' });
     const { error } = await supabase.from('connected_accounts').delete().eq('id', id).eq('user_email', userEmail);
     if (error) return res.status(400).json({ message: error.message });
-    res.json({ message: 'Ящик успешно удален' });
+    res.json({ message: 'Удалено' });
 });
 
 app.patch('/api/accounts/:id', async (req, res) => {
@@ -80,34 +77,10 @@ app.patch('/api/accounts/:id', async (req, res) => {
     if (!userEmail) return res.status(401).json({ message: 'Не авторизован' });
     const { error } = await supabase.from('connected_accounts').update({ title }).eq('id', id).eq('user_email', userEmail);
     if (error) return res.status(400).json({ message: error.message });
-    res.json({ message: 'Название обновлено' });
+    res.json({ message: 'Обновлено' });
 });
 
-// НОВЫЙ МАРШРУТ: РУЧНАЯ СМЕНА КАТЕГОРИИ
-app.patch('/api/emails/:uid/category', async (req, res) => {
-    const userEmail = req.headers['x-user-email'];
-    const accountId = req.headers['x-account-id'];
-    const { uid } = req.params;
-    const { category } = req.body;
-
-    if (!userEmail || !accountId) return res.status(401).json({ message: 'Не авторизован' });
-
-    try {
-        const { data: existing } = await supabase.from('email_cache').select('uid').eq('account_id', accountId).eq('uid', uid).single();
-        
-        if (existing) {
-            await supabase.from('email_cache').update({ category }).eq('account_id', accountId).eq('uid', uid);
-        } else {
-            // Если письма еще нет в кэше, создаем запись с минимальными данными
-            await supabase.from('email_cache').insert([{ account_id: accountId, uid: uid, category, body_text: 'Загрузка...' }]);
-        }
-        res.json({ success: true, category });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-});
-
-// 1. СПИСОК ПИСЕМ
+// --- ПИСЬМА ---
 app.get('/api/emails', async (req, res) => {
     const userEmail = req.headers['x-user-email'];
     const accountId = req.headers['x-account-id'];
@@ -139,12 +112,9 @@ app.get('/api/emails', async (req, res) => {
         }
         connection.end();
         res.json(parsedEmails);
-    } catch (error) {
-        res.status(500).json({ message: `Отказ почтового сервера: ${error.message}` });
-    }
+    } catch (error) { res.status(500).json({ message: error.message }); }
 });
 
-// 2. ОТКРЫТИЕ ПИСЬМА (ТОЛЬКО ТЕКСТ)
 app.get('/api/emails/:uid', async (req, res) => {
     const userEmail = req.headers['x-user-email'];
     const accountId = req.headers['x-account-id'];
@@ -160,10 +130,7 @@ app.get('/api/emails/:uid', async (req, res) => {
         await connection.openBox('INBOX');
 
         const messages = await connection.search([['UID', uid]], { bodies: [''], markSeen: true });
-        if (messages.length === 0) {
-            connection.end();
-            return res.status(404).json({ message: 'Письмо не найдено' });
-        }
+        if (messages.length === 0) { connection.end(); return res.status(404).json({ message: 'Не найдено' }); }
 
         const parsedMail = await simpleParser(messages[0].parts.find(part => part.which === '').body);
         connection.end();
@@ -179,12 +146,9 @@ app.get('/api/emails/:uid', async (req, res) => {
         }
 
         res.json({ id: uid, text: bodyTextToSave });
-    } catch (error) {
-        res.status(500).json({ message: `Отказ почтового сервера: ${error.message}` });
-    }
+    } catch (error) { res.status(500).json({ message: error.message }); }
 });
 
-// 3. ГЕНЕРАЦИЯ САММАРИ
 app.post('/api/emails/:uid/summary', async (req, res) => {
     const userEmail = req.headers['x-user-email'];
     const accountId = req.headers['x-account-id'];
@@ -198,6 +162,7 @@ app.post('/api/emails/:uid/summary', async (req, res) => {
 
         let aiSummary = "ИИ не смог сгенерировать выжимку.";
         let aiSuccess = false;
+
         if (text && text.trim().length > 10) {
             try {
                 const textForAi = cleanTextForAI(text); 
@@ -211,31 +176,22 @@ app.post('/api/emails/:uid/summary', async (req, res) => {
                         ]
                     })
                 });
-                if (aiResponse.ok) {
-                    aiSummary = await aiResponse.text();
-                    aiSuccess = true;
-                }
+
+                if (aiResponse.ok) { aiSummary = await aiResponse.text(); aiSuccess = true; } 
+                else throw new Error(`Ошибка ИИ`);
             } catch (aiError) { throw new Error("Сбой на стороне сервера нейросети"); }
-        } else {
-            aiSummary = "Текст письма слишком короткий для выжимки.";
-            aiSuccess = true;
-        }
+        } else { aiSummary = "Текст письма слишком короткий."; aiSuccess = true; }
 
         if (aiSuccess) {
             const { data: existing } = await supabase.from('email_cache').select('uid').eq('account_id', accountId).eq('uid', uid).single();
-            if (existing) {
-                await supabase.from('email_cache').update({ summary: aiSummary }).eq('account_id', accountId).eq('uid', uid);
-            } else {
-                await supabase.from('email_cache').insert([{ account_id: accountId, uid: uid, summary: aiSummary }]);
-            }
+            if (existing) await supabase.from('email_cache').update({ summary: aiSummary }).eq('account_id', accountId).eq('uid', uid);
+            else await supabase.from('email_cache').insert([{ account_id: accountId, uid: uid, summary: aiSummary }]);
         }
         res.json({ summary: aiSummary });
-    } catch (error) {
-        res.status(500).json({ message: error.message || 'Ошибка сервера' });
-    }
+    } catch (error) { res.status(500).json({ message: error.message }); }
 });
 
-// 4. ФОНОВАЯ КЛАССИФИКАЦИЯ (БЕЗ ИЗМЕНЕНИЙ НЕЙРОНКИ)
+// --- АНАЛИЗ И ПОИСК ДЕДЛАЙНОВ ---
 app.get('/api/emails/:uid/analyze', async (req, res) => {
     const userEmail = req.headers['x-user-email'];
     const accountId = req.headers['x-account-id'];
@@ -243,24 +199,26 @@ app.get('/api/emails/:uid/analyze', async (req, res) => {
     if (!userEmail) return res.status(401).json({ message: 'Не авторизован' });
 
     try {
-        const { data: cached } = await supabase.from('email_cache').select('category').eq('account_id', accountId).eq('uid', uid).single();
-        if (cached && cached.category) return res.json({ category: cached.category, cached: true });
+        // ДОСТАЕМ И КАТЕГОРИЮ И ДЕДЛАЙН ИЗ КЭША
+        const { data: cached } = await supabase.from('email_cache').select('category, deadline').eq('account_id', accountId).eq('uid', uid).single();
+        if (cached && cached.category) return res.json({ category: cached.category, deadline: cached.deadline, cached: true });
 
         const config = await getImapConfig(userEmail, accountId);
         const connection = await imaps.connect(config);
         await connection.openBox('INBOX');
+
         const messages = await connection.search([['UID', uid]], { bodies: [''], markSeen: false });
-        if (messages.length === 0) {
-            connection.end();
-            return res.json({ category: 'ОБЫЧНО', cached: false });
-        }
+        if (messages.length === 0) { connection.end(); return res.json({ category: 'ОБЫЧНО', deadline: null, cached: false }); }
+
         const parsedMail = await simpleParser(messages[0].parts.find(part => part.which === '').body);
         connection.end();
+
         const rawText = extractTextFromMail(parsedMail);
         const sender = parsedMail.from && parsedMail.from.text ? parsedMail.from.text : 'Неизвестный';
         const subject = parsedMail.subject || '(Без темы)';
         
         let finalCategory = 'ОБЫЧНО'; 
+        let finalDeadline = null;
         let aiSuccess = false; 
 
         if (rawText.trim().length > 10) {
@@ -273,20 +231,36 @@ app.get('/api/emails/:uid/analyze', async (req, res) => {
                         messages: [
                             { 
                                 role: 'system', 
-                                content: `Определи категорию письма. Выбери строго ОДНО слово из списка: ВАЖНО, СПАМ, РЕКЛАМА, РАБОТА, ЛИЧНОЕ, ОБЫЧНО. Ответь только одним словом.` 
+                                content: `Определи категорию письма и найди жесткий дедлайн (дату или время сдачи/выполнения), если он есть в тексте.
+Ответь строго в формате: КАТЕГОРИЯ|ДЕДЛАЙН
+Если дедлайна нет, напиши НЕТ.
+Категории: ВАЖНО, СПАМ, РЕКЛАМА, РАБОТА, ЛИЧНОЕ, ОБЫЧНО.
+Пример 1: РАБОТА|до 15 мая
+Пример 2: ОБЫЧНО|НЕТ
+Пример 3: ВАЖНО|завтра в 14:00` 
                             },
-                            { role: 'user', content: `Отправитель: ${sender}\nТема: ${subject}\nТекст:\n${textForAi}` }
+                            { role: 'user', content: `Отправитель: ${sender}\nТема: ${subject}\nТекст письма:\n${textForAi}` }
                         ]
                     })
                 });
+
                 if (aiResponse.ok) {
                     let aiDecision = await aiResponse.text();
-                    aiDecision = aiDecision.toUpperCase();
-                    if (aiDecision.includes('ВАЖНО')) finalCategory = 'ВАЖНО';
-                    else if (aiDecision.includes('СПАМ')) finalCategory = 'СПАМ';
-                    else if (aiDecision.includes('РЕКЛАМА')) finalCategory = 'РЕКЛАМА';
-                    else if (aiDecision.includes('РАБОТА')) finalCategory = 'РАБОТА';
-                    else if (aiDecision.includes('ЛИЧНОЕ')) finalCategory = 'ЛИЧНОЕ';
+                    const parts = aiDecision.split('|');
+                    
+                    let aiCat = parts[0] ? parts[0].toUpperCase() : '';
+                    let aiDead = parts[1] ? parts[1].trim() : '';
+
+                    if (aiCat.includes('ВАЖНО')) finalCategory = 'ВАЖНО';
+                    else if (aiCat.includes('СПАМ')) finalCategory = 'СПАМ';
+                    else if (aiCat.includes('РЕКЛАМА')) finalCategory = 'РЕКЛАМА';
+                    else if (aiCat.includes('РАБОТА')) finalCategory = 'РАБОТА';
+                    else if (aiCat.includes('ЛИЧНОЕ')) finalCategory = 'ЛИЧНОЕ';
+                    
+                    // Проверяем, есть ли дедлайн
+                    if (aiDead && !aiDead.toUpperCase().includes('НЕТ') && !aiDead.toUpperCase().includes('NONE')) {
+                        finalDeadline = aiDead;
+                    }
                     aiSuccess = true; 
                 }
             } catch (aiError) {}
@@ -296,13 +270,29 @@ app.get('/api/emails/:uid/analyze', async (req, res) => {
             const bodyTextToSave = rawText || 'Нет текста.';
             const { data: existing } = await supabase.from('email_cache').select('uid').eq('account_id', accountId).eq('uid', uid).single();
             if (existing) {
-                await supabase.from('email_cache').update({ category: finalCategory, body_text: bodyTextToSave }).eq('account_id', accountId).eq('uid', uid);
+                // ДОБАВИЛ СОХРАНЕНИЕ ДЕДЛАЙНА В БАЗУ
+                await supabase.from('email_cache').update({ category: finalCategory, deadline: finalDeadline, body_text: bodyTextToSave }).eq('account_id', accountId).eq('uid', uid);
             } else {
-                await supabase.from('email_cache').insert([{ account_id: accountId, uid: uid, category: finalCategory, body_text: bodyTextToSave }]);
+                await supabase.from('email_cache').insert([{ account_id: accountId, uid: uid, category: finalCategory, deadline: finalDeadline, body_text: bodyTextToSave }]);
             }
         }
-        res.json({ category: finalCategory, cached: false });
-    } catch (error) { res.json({ category: 'ОБЫЧНО', cached: false }); }
+
+        res.json({ category: finalCategory, deadline: finalDeadline, cached: false });
+    } catch (error) { res.json({ category: 'ОБЫЧНО', deadline: null, cached: false }); }
+});
+
+app.patch('/api/emails/:uid/category', async (req, res) => {
+    const userEmail = req.headers['x-user-email'];
+    const accountId = req.headers['x-account-id'];
+    const { uid } = req.params;
+    const { category } = req.body;
+    if (!userEmail || !accountId) return res.status(401).json({ message: 'Не авторизован' });
+    try {
+        const { data: existing } = await supabase.from('email_cache').select('uid').eq('account_id', accountId).eq('uid', uid).single();
+        if (existing) await supabase.from('email_cache').update({ category }).eq('account_id', accountId).eq('uid', uid);
+        else await supabase.from('email_cache').insert([{ account_id: accountId, uid: uid, category, body_text: 'Загрузка...' }]);
+        res.json({ success: true, category });
+    } catch (error) { res.status(500).json({ message: error.message }); }
 });
 
 app.post('/api/register', async (req, res) => {

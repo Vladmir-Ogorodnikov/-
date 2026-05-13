@@ -47,8 +47,41 @@
         .email-card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; border-left: 6px solid #007bff; cursor: pointer; transition: 0.3s ease; position: relative; }
         .email-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         
-        .category-select { width: auto; display: inline-block; padding: 2px 5px; font-size: 11px; border-radius: 4px; font-weight: bold; margin-left: 10px; cursor: pointer; border: none; color: white; text-transform: uppercase; vertical-align: text-bottom; }
+        /* ОБНОВЛЕННЫЕ СТИЛИ (FLEXBOX ДЛЯ ИДЕАЛЬНОГО ВЫРАВНИВАНИЯ) */
+        .sender { 
+            font-weight: bold; 
+            color: #2f3542; 
+            display: flex; 
+            align-items: center; 
+            flex-wrap: wrap; 
+            gap: 8px; 
+            margin-bottom: 5px; 
+        }
+
+        .category-select { 
+            width: auto; 
+            padding: 2px 5px; 
+            font-size: 11px; 
+            border-radius: 4px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            border: none; 
+            color: white; 
+            text-transform: uppercase; 
+        }
         
+        .deadline-badge { 
+            background: #ff4757; 
+            color: white; 
+            padding: 3px 8px; 
+            border-radius: 4px; 
+            font-size: 11px; 
+            font-weight: bold; 
+            animation: pulse-red 2s infinite; 
+            box-shadow: 0 0 8px rgba(255, 71, 87, 0.4); 
+        }
+        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7); } 70% { box-shadow: 0 0 0 6px rgba(255, 71, 87, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 71, 87, 0); } }
+
         .email-card.cat-ВАЖНО { border-left-color: #ff4757; background-color: #fff9fa; }
         .email-card.cat-ВАЖНО .category-select { background: #ff4757; }
         .email-card.cat-РАБОТА { border-left-color: #2ed573; }
@@ -66,7 +99,6 @@
 
         .ai-status { font-size: 12px; color: #a4b0be; float: right; margin-left: 15px; font-style: italic; animation: pulse 1.5s infinite; }
         
-        /* АНИМАЦИИ И ЗАГРУЗКА */
         @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
         @keyframes spin { 100% { transform: rotate(360deg); } }
         
@@ -81,7 +113,6 @@
         .loading-banner { background: #e0f0ff; color: #0056b3; padding: 15px 20px; border-radius: 8px; margin-bottom: 15px; display: flex; align-items: center; gap: 12px; font-weight: bold; border: 1px solid #b8daff; box-shadow: 0 4px 12px rgba(0,123,255,0.1); animation: pulse 2s infinite; }
         .loading-banner .spinner { display: inline-block; animation: spin 1.5s linear infinite; font-size: 20px; }
 
-        .sender { font-weight: bold; color: #2f3542; display: block; margin-bottom: 5px; }
         .date { color: #a4b0be; font-size: 12px; float: right; }
         .subject { margin: 10px 0; color: #2f3542; font-size: 18px; }
         .body { color: #57606f; line-height: 1.5; font-size: 14px; white-space: pre-wrap; }
@@ -100,7 +131,6 @@
         .error-msg { text-align: center; color: #ff4757; font-weight: bold; padding: 20px; background: #fff9fa; border-radius: 8px; border: 1px solid #ff4757; }
         .no-emails-msg { text-align: center; color: #a4b0be; padding: 30px; font-size: 15px; }
 
-        /* TOAST УВЕДОМЛЕНИЯ */
         #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
         .toast { padding: 12px 20px; border-radius: 8px; color: white; font-size: 14px; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.15); opacity: 0; transform: translateY(20px); animation: toastIn 0.3s forwards; display: flex; align-items: center; gap: 10px; pointer-events: auto;}
         .toast.success { background: #2ed573; }
@@ -349,21 +379,17 @@
             const list = document.getElementById(`email-list-${currentAccountId}`);
             if (!list) return;
 
-            // 1. Анимируем кнопку
             const originalText = btnElement.innerHTML;
             btnElement.innerHTML = '<span class="spinner" style="display:inline-block;">🔄</span> Обновляем...';
             btnElement.disabled = true;
             btnElement.style.opacity = '0.7';
             btnElement.style.cursor = 'wait';
 
-            // 2. МГНОВЕННО очищаем старые письма и показываем СКЕЛЕТОН прямо сейчас
             list.innerHTML = getSkeletonHTML();
             list.dataset.loaded = ''; 
 
-            // 3. Вызываем скачивание новых писем
             await fetchEmails(currentAccountId); 
             
-            // 4. Возвращаем кнопку в исходное состояние
             btnElement.innerHTML = originalText;
             btnElement.disabled = false;
             btnElement.style.opacity = '1';
@@ -481,8 +507,6 @@
         async function fetchEmails(accId) {
             const list = document.getElementById(`email-list-${accId}`);
             
-            // Если мы переключили вкладку и письма не загружены - рисуем скелетон. 
-            // (Если вызвано из refreshCurrentAccount, он уже нарисован, но это не повредит)
             if (!list.innerHTML.includes('skeleton-card')) {
                 list.innerHTML = getSkeletonHTML();
             }
@@ -508,7 +532,7 @@
                             <div onclick="loadFullEmail(${mail.id}, ${accId})">
                                 <span class="ai-status" id="status-${accId}-${mail.id}">✨ Анализ...</span>
                                 <span class="date">${niceDate}</span>
-                                <span class="sender">
+                                <span class="sender" id="sender-box-${accId}-${mail.id}">
                                     ${mail.sender}
                                     <select class="category-select" id="select-${accId}-${mail.id}" onclick="event.stopPropagation()" onchange="changeEmailCategory(${accId}, ${mail.id}, this.value)">
                                         <option value="PENDING" disabled hidden selected>Ожидание...</option>
@@ -551,6 +575,8 @@
                     const data = await res.json();
                     const card = document.getElementById(`card-${accId}-${mail.id}`);
                     const select = document.getElementById(`select-${accId}-${mail.id}`);
+                    const senderBox = document.getElementById(`sender-box-${accId}-${mail.id}`);
+                    
                     document.getElementById(`status-${accId}-${mail.id}`).style.display = 'none';
 
                     if (data.category) {
@@ -558,6 +584,13 @@
                         card.setAttribute('data-category', data.category); 
                         select.value = data.category;
                     }
+
+                    if (data.deadline) {
+                        card.style.borderLeftColor = '#ff4757'; 
+                        card.style.backgroundColor = '#fff0f0';
+                        senderBox.insertAdjacentHTML('beforeend', `<span class="deadline-badge">⏰ Дедлайн: ${data.deadline}</span>`);
+                    }
+
                     applyFilters();
                     if (!data.cached) await new Promise(resolve => setTimeout(resolve, 1000));
                 } catch (e) { document.getElementById(`status-${accId}-${mail.id}`).style.display = 'none'; }
