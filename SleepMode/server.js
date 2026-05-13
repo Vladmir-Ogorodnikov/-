@@ -8,7 +8,6 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-// Лимит 10мб защищает от падений при парсинге тяжелых писем
 app.use(express.json({ limit: '10mb' })); 
 app.use(express.static('public')); 
 
@@ -63,6 +62,49 @@ app.post('/api/accounts', async (req, res) => {
     const { error } = await supabase.from('connected_accounts').insert([{ user_email: userEmail, mail_user, mail_pass, mail_host, title }]);
     if (error) return res.status(400).json({ message: error.message }); 
     res.json({ message: 'Ящик успешно добавлен!' });
+});
+
+app.delete('/api/accounts/:id', async (req, res) => {
+    const userEmail = req.headers['x-user-email'];
+    const { id } = req.params;
+    if (!userEmail) return res.status(401).json({ message: 'Не авторизован' });
+    const { error } = await supabase.from('connected_accounts').delete().eq('id', id).eq('user_email', userEmail);
+    if (error) return res.status(400).json({ message: error.message });
+    res.json({ message: 'Ящик успешно удален' });
+});
+
+app.patch('/api/accounts/:id', async (req, res) => {
+    const userEmail = req.headers['x-user-email'];
+    const { id } = req.params;
+    const { title } = req.body;
+    if (!userEmail) return res.status(401).json({ message: 'Не авторизован' });
+    const { error } = await supabase.from('connected_accounts').update({ title }).eq('id', id).eq('user_email', userEmail);
+    if (error) return res.status(400).json({ message: error.message });
+    res.json({ message: 'Название обновлено' });
+});
+
+// НОВЫЙ МАРШРУТ: РУЧНАЯ СМЕНА КАТЕГОРИИ
+app.patch('/api/emails/:uid/category', async (req, res) => {
+    const userEmail = req.headers['x-user-email'];
+    const accountId = req.headers['x-account-id'];
+    const { uid } = req.params;
+    const { category } = req.body;
+
+    if (!userEmail || !accountId) return res.status(401).json({ message: 'Не авторизован' });
+
+    try {
+        const { data: existing } = await supabase.from('email_cache').select('uid').eq('account_id', accountId).eq('uid', uid).single();
+        
+        if (existing) {
+            await supabase.from('email_cache').update({ category }).eq('account_id', accountId).eq('uid', uid);
+        } else {
+            // Если письма еще нет в кэше, создаем запись с минимальными данными
+            await supabase.from('email_cache').insert([{ account_id: accountId, uid: uid, category, body_text: 'Загрузка...' }]);
+        }
+        res.json({ success: true, category });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 });
 
 // 1. СПИСОК ПИСЕМ
@@ -142,15 +184,12 @@ app.get('/api/emails/:uid', async (req, res) => {
     }
 });
 
-// 3. ГЕНЕРАЦИЯ САММАРИ (ЗАЩИЩЕНО ОТ ПАДЕНИЙ)
+// 3. ГЕНЕРАЦИЯ САММАРИ
 app.post('/api/emails/:uid/summary', async (req, res) => {
     const userEmail = req.headers['x-user-email'];
     const accountId = req.headers['x-account-id'];
     const uid = req.params.uid;
-    
-    // БЕЗОПАСНОСТЬ: задаем значения по умолчанию, если клиент прислал пустой запрос
     const { text = '', sender = 'Неизвестный', subject = '(Без темы)' } = req.body || {};
-
     if (!userEmail) return res.status(401).json({ message: 'Не авторизован' });
 
     try {
@@ -159,8 +198,6 @@ app.post('/api/emails/:uid/summary', async (req, res) => {
 
         let aiSummary = "ИИ не смог сгенерировать выжимку.";
         let aiSuccess = false;
-
-        // БЕЗОПАСНОСТЬ: проверяем, что текст есть и он длиннее 10 символов
         if (text && text.trim().length > 10) {
             try {
                 const textForAi = cleanTextForAI(text); 
@@ -174,20 +211,14 @@ app.post('/api/emails/:uid/summary', async (req, res) => {
                         ]
                     })
                 });
-
                 if (aiResponse.ok) {
                     aiSummary = await aiResponse.text();
                     aiSuccess = true;
-                } else {
-                    throw new Error(`Нейросеть ответила статусом ${aiResponse.status}`);
                 }
-            } catch (aiError) {
-                console.error("Сбой ИИ (Саммари):", aiError.message);
-                throw new Error("Сбой на стороне сервера нейросети"); 
-            }
+            } catch (aiError) { throw new Error("Сбой на стороне сервера нейросети"); }
         } else {
             aiSummary = "Текст письма слишком короткий для выжимки.";
-            aiSuccess = true; // Это не ошибка, просто текста нет
+            aiSuccess = true;
         }
 
         if (aiSuccess) {
@@ -198,15 +229,13 @@ app.post('/api/emails/:uid/summary', async (req, res) => {
                 await supabase.from('email_cache').insert([{ account_id: accountId, uid: uid, summary: aiSummary }]);
             }
         }
-
         res.json({ summary: aiSummary });
     } catch (error) {
-        console.error("Ошибка маршрута /summary:", error.message);
-        res.status(500).json({ message: error.message || 'Ошибка сервера при обработке' });
+        res.status(500).json({ message: error.message || 'Ошибка сервера' });
     }
 });
 
-// 4. ФОНОВАЯ КЛАССИФИКАЦИЯ
+// 4. ФОНОВАЯ КЛАССИФИКАЦИЯ (БЕЗ ИЗМЕНЕНИЙ НЕЙРОНКИ)
 app.get('/api/emails/:uid/analyze', async (req, res) => {
     const userEmail = req.headers['x-user-email'];
     const accountId = req.headers['x-account-id'];
@@ -220,16 +249,13 @@ app.get('/api/emails/:uid/analyze', async (req, res) => {
         const config = await getImapConfig(userEmail, accountId);
         const connection = await imaps.connect(config);
         await connection.openBox('INBOX');
-
         const messages = await connection.search([['UID', uid]], { bodies: [''], markSeen: false });
         if (messages.length === 0) {
             connection.end();
             return res.json({ category: 'ОБЫЧНО', cached: false });
         }
-
         const parsedMail = await simpleParser(messages[0].parts.find(part => part.which === '').body);
         connection.end();
-
         const rawText = extractTextFromMail(parsedMail);
         const sender = parsedMail.from && parsedMail.from.text ? parsedMail.from.text : 'Неизвестный';
         const subject = parsedMail.subject || '(Без темы)';
@@ -247,20 +273,12 @@ app.get('/api/emails/:uid/analyze', async (req, res) => {
                         messages: [
                             { 
                                 role: 'system', 
-                                content: `Определи категорию письма. Выбери строго ОДНО слово из списка:
-- ВАЖНО (коды авторизации, 2FA, пароли от EA/Steam/Google, чеки, билеты, официальные письма от сервисов)
-- СПАМ (откровенные мошенники, казино, шантаж)
-- РЕКЛАМА (скидки, маркетинг, рассылки магазинов)
-- РАБОТА (задачи, проекты, коллеги, учеба, курсы, Stepik)
-- ЛИЧНОЕ (переписка)
-- ОБЫЧНО (всё остальное)
-Ответь только одним словом, без точек.` 
+                                content: `Определи категорию письма. Выбери строго ОДНО слово из списка: ВАЖНО, СПАМ, РЕКЛАМА, РАБОТА, ЛИЧНОЕ, ОБЫЧНО. Ответь только одним словом.` 
                             },
-                            { role: 'user', content: `Отправитель: ${sender}\nТема: ${subject}\nТекст письма:\n${textForAi}` }
+                            { role: 'user', content: `Отправитель: ${sender}\nТема: ${subject}\nТекст:\n${textForAi}` }
                         ]
                     })
                 });
-
                 if (aiResponse.ok) {
                     let aiDecision = await aiResponse.text();
                     aiDecision = aiDecision.toUpperCase();
@@ -272,9 +290,7 @@ app.get('/api/emails/:uid/analyze', async (req, res) => {
                     aiSuccess = true; 
                 }
             } catch (aiError) {}
-        } else {
-            aiSuccess = true; 
-        }
+        } else { aiSuccess = true; }
 
         if (aiSuccess) {
             const bodyTextToSave = rawText || 'Нет текста.';
@@ -285,17 +301,14 @@ app.get('/api/emails/:uid/analyze', async (req, res) => {
                 await supabase.from('email_cache').insert([{ account_id: accountId, uid: uid, category: finalCategory, body_text: bodyTextToSave }]);
             }
         }
-
         res.json({ category: finalCategory, cached: false });
-    } catch (error) {
-        res.json({ category: 'ОБЫЧНО', cached: false }); 
-    }
+    } catch (error) { res.json({ category: 'ОБЫЧНО', cached: false }); }
 });
 
 app.post('/api/register', async (req, res) => {
     const { email, password, mail_user, mail_pass, mail_host } = req.body;
     const { error: userError } = await supabase.from('users').insert([{ email, password }]);
-    if (userError) return res.status(400).json({ message: 'Ошибка регистрации аккаунта' });
+    if (userError) return res.status(400).json({ message: 'Ошибка регистрации' });
     await supabase.from('connected_accounts').insert([{ user_email: email, mail_user, mail_pass, mail_host, title: 'Основной ящик' }]);
     res.status(201).json({ message: 'Аккаунт создан!' });
 });

@@ -23,60 +23,103 @@
         .add-account-btn { padding: 8px 16px; background: #2ed573; border-radius: 20px; cursor: pointer; color: white; font-weight: bold; border: none; white-space: nowrap; font-size: 14px; }
         .add-account-btn:hover { background: #26b360; }
 
-        .categories-bar { display: flex; gap: 8px; max-width: 800px; margin: 0 auto 20px auto; overflow-x: auto; padding-bottom: 5px; }
+        .manage-btn { padding: 8px 16px; background: #747d8c; border-radius: 20px; cursor: pointer; color: white; font-weight: bold; border: none; white-space: nowrap; font-size: 14px; margin-left: 5px; }
+        .manage-btn:hover { background: #57606f; }
+        .manage-btn.refresh-btn { background: #007bff; }
+        .manage-btn.refresh-btn:hover { background: #0056b3; }
+
+        .manage-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; text-align: left; }
+        .manage-item input { width: 60%; margin: 0; padding: 5px; }
+        .manage-actions { display: flex; gap: 5px; }
+        .btn-mini { padding: 5px 10px; font-size: 12px; border-radius: 4px; border: none; cursor: pointer; color: white; }
+        .btn-save { background: #2ed573; }
+        .btn-del { background: #ff4757; }
+
+        .categories-bar { display: flex; gap: 8px; max-width: 800px; margin: 0 auto 10px auto; overflow-x: auto; padding-bottom: 5px; }
         .cat-filter { padding: 6px 14px; background: #e1e8ed; border-radius: 15px; cursor: pointer; font-size: 13px; font-weight: bold; color: #57606f; transition: 0.2s; white-space: nowrap; }
         .cat-filter:hover { background: #ced6e0; }
         .cat-filter.active { background: #2f3542; color: white; }
 
+        /* ПОИСКОВАЯ СТРОКА */
+        .search-container { max-width: 800px; margin: 0 auto 20px auto; }
+        .search-input { width: 100%; padding: 10px 16px; border-radius: 20px; border: 1px solid #ddd; background: white; font-size: 14px; outline: none; transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .search-input:focus { border-color: #007bff; box-shadow: 0 2px 8px rgba(0,123,255,0.1); }
+
         .email-card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; border-left: 6px solid #007bff; cursor: pointer; transition: 0.3s ease; position: relative; }
         .email-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         
-        .category-badge { display: none; padding: 3px 8px; border-radius: 4px; font-size: 11px; text-transform: uppercase; font-weight: bold; margin-left: 10px; vertical-align: text-bottom; }
+        .category-select { width: auto; display: inline-block; padding: 2px 5px; font-size: 11px; border-radius: 4px; font-weight: bold; margin-left: 10px; cursor: pointer; border: none; color: white; text-transform: uppercase; vertical-align: text-bottom; }
+        
         .email-card.cat-ВАЖНО { border-left-color: #ff4757; background-color: #fff9fa; }
-        .email-card.cat-ВАЖНО .category-badge { display: inline-block; background: #ff4757; color: white; }
+        .email-card.cat-ВАЖНО .category-select { background: #ff4757; }
         .email-card.cat-РАБОТА { border-left-color: #2ed573; }
-        .email-card.cat-РАБОТА .category-badge { display: inline-block; background: #2ed573; color: white; }
+        .email-card.cat-РАБОТА .category-select { background: #2ed573; }
         .email-card.cat-РЕКЛАМА { border-left-color: #ffa502; background-color: #fffdf5; }
-        .email-card.cat-РЕКЛАМА .category-badge { display: inline-block; background: #ffa502; color: white; }
+        .email-card.cat-РЕКЛАМА .category-select { background: #ffa502; }
         .email-card.cat-ЛИЧНОЕ { border-left-color: #3742fa; }
-        .email-card.cat-ЛИЧНОЕ .category-badge { display: inline-block; background: #3742fa; color: white; }
+        .email-card.cat-ЛИЧНОЕ .category-select { background: #3742fa; }
         .email-card.cat-СПАМ { border-left-color: #747d8c; opacity: 0.8; }
-        .email-card.cat-СПАМ .category-badge { display: inline-block; background: #747d8c; color: white; }
+        .email-card.cat-СПАМ .category-select { background: #747d8c; }
         .email-card.cat-ОБЫЧНО { border-left-color: #ced6e0; }
-        .email-card.cat-ОБЫЧНО .category-badge { display: inline-block; background: #f1f2f6; color: #57606f; }
+        .email-card.cat-ОБЫЧНО .category-select { background: #f1f2f6; color: #57606f; }
+        .email-card.cat-ИЗБРАННОЕ { border-left-color: #ffc107; background-color: #fffdec; }
+        .email-card.cat-ИЗБРАННОЕ .category-select { background: #ffc107; color: #2f3542; }
 
         .ai-status { font-size: 12px; color: #a4b0be; float: right; margin-left: 15px; font-style: italic; animation: pulse 1.5s infinite; }
+        
         @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+        .skeleton { background: #e1e8ed; border-radius: 4px; animation: pulse 1.5s infinite; }
+        .skeleton-card { background: white; padding: 20px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .skeleton-title { height: 20px; width: 60%; margin-bottom: 10px; }
+        .skeleton-text { height: 12px; width: 100%; margin-bottom: 5px; }
+        .skeleton-text.short { width: 40%; margin-bottom: 15px; }
+        .skeleton-badge { height: 16px; width: 80px; float: right; border-radius: 12px; }
+        .skeleton-tab { height: 35px; width: 100px; border-radius: 20px; display: inline-block; margin-right: 10px; }
 
         .sender { font-weight: bold; color: #2f3542; display: block; margin-bottom: 5px; }
         .date { color: #a4b0be; font-size: 12px; float: right; }
         .subject { margin: 10px 0; color: #2f3542; font-size: 18px; }
-        
         .body { color: #57606f; line-height: 1.5; font-size: 14px; white-space: pre-wrap; }
         .email-text-content { margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee; display: none; }
         
         .ai-summary-box { background: #f0f7ff; border-left: 4px solid #007bff; padding: 15px; margin-bottom: 15px; border-radius: 8px; font-size: 14px; color: #004085; line-height: 1.5; }
-        
         .btn-summary { background: linear-gradient(135deg, #6c5ce7, #a29bfe); color: white; border: none; padding: 8px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px; margin-bottom: 15px; transition: 0.2s; box-shadow: 0 2px 5px rgba(108, 92, 231, 0.3); }
         .btn-summary:hover { transform: translateY(-1px); box-shadow: 0 4px 8px rgba(108, 92, 231, 0.4); }
         
-        .original-text { 
-            white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; 
-            background: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #e1e8ed; 
-            color: #2f3542; font-family: inherit; line-height: 1.6;
-        }
-
+        .original-text { white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; background: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #e1e8ed; color: #2f3542; font-family: inherit; line-height: 1.6; }
+        
         .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 1000;}
         .modal-box { background: white; padding: 30px; border-radius: 12px; width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); text-align: center; }
         .modal-box h3 { margin-top: 0; color: #1c1e21; }
-        
         .hidden { display: none !important; }
-        .loading { text-align: center; color: #747d8c; padding: 40px; font-style: italic; }
         .error-msg { text-align: center; color: #ff4757; font-weight: bold; padding: 20px; background: #fff9fa; border-radius: 8px; border: 1px solid #ff4757; }
         .no-emails-msg { text-align: center; color: #a4b0be; padding: 30px; font-size: 15px; }
+
+        /* TOAST УВЕДОМЛЕНИЯ */
+        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+        .toast { padding: 12px 20px; border-radius: 8px; color: white; font-size: 14px; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.15); opacity: 0; transform: translateY(20px); animation: toastIn 0.3s forwards; display: flex; align-items: center; gap: 10px; pointer-events: auto;}
+        .toast.success { background: #2ed573; }
+        .toast.error { background: #ff4757; }
+        .toast.info { background: #007bff; }
+        .toast.fadeOut { animation: toastOut 0.3s forwards; }
+        @keyframes toastIn { to { opacity: 1; transform: translateY(0); } }
+        @keyframes toastOut { to { opacity: 0; transform: translateY(20px); } }
     </style>
 </head>
 <body>
+
+    <div id="toast-container"></div>
+
+    <div id="confirm-modal" class="modal-overlay hidden" style="z-index: 10000;">
+        <div class="modal-box" style="width: 350px;">
+            <h3 style="margin-top:0;">Подтверждение</h3>
+            <p id="confirm-msg" style="color: #57606f; margin-bottom: 20px; font-size: 15px; line-height: 1.4;"></p>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button id="confirm-yes" style="background: #ff4757; margin:0; flex: 1;">Да</button>
+                <button id="confirm-no" style="background: #747d8c; margin:0; flex: 1;">Отмена</button>
+            </div>
+        </div>
+    </div>
 
     <div id="login-screen" class="auth-container">
         <h2>С возвращением!</h2>
@@ -93,13 +136,15 @@
         <p style="font-size: 13px; color: #666; margin-top: 15px;">Настройки подключаемой почты:</p>
         <input type="email" id="mail-user" placeholder="Ваш реальный ящик (например, @mail.ru)">
         <input type="password" id="mail-pass" placeholder="Пароль приложения (16 знаков)">
-        
         <select id="mail-host">
             <option value="" disabled selected>Выберите почтовый сервис...</option>
             <option value="imap.mail.ru">Mail.ru</option>
             <option value="imap.gmail.com">Gmail</option>
         </select>
-        
+        <div style="margin-top: 15px; text-align: left; font-size: 13px; color: #2f3542; display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" id="reg-agreement" style="width: auto; margin: 0;">
+            <label for="reg-agreement">Я согласен на обработку персональных данных</label>
+        </div>
         <button onclick="register()">Создать и подключить</button>
         <a class="switch-link" onclick="switchScreen('login-screen')">Уже есть аккаунт</a>
     </div>
@@ -110,15 +155,21 @@
             <input type="text" id="new-title" placeholder="Название (напр. Работа, Gmail)">
             <input type="email" id="new-mail-user" placeholder="Логин от почты">
             <input type="password" id="new-mail-pass" placeholder="Пароль приложения">
-            
             <select id="new-mail-host">
                 <option value="" disabled selected>Выберите почтовый сервис...</option>
                 <option value="imap.mail.ru">Mail.ru</option>
                 <option value="imap.gmail.com">Gmail</option>
             </select>
-            
             <button style="background: #2ed573; margin-top: 15px;" onclick="addAccount()">Подключить</button>
             <button style="background: transparent; color: #ff4757; margin-top: 5px;" onclick="closeModal()">Отмена</button>
+        </div>
+    </div>
+
+    <div id="manage-accounts-modal" class="modal-overlay hidden">
+        <div class="modal-box" style="width: 500px;">
+            <h3>Управление ящиками</h3>
+            <div id="manage-list-container" style="max-height: 300px; overflow-y: auto; margin-bottom: 20px;"></div>
+            <button style="background: #747d8c;" onclick="closeManageModal()">Закрыть</button>
         </div>
     </div>
 
@@ -133,14 +184,20 @@
         
         <div class="accounts-bar" id="accounts-container"></div>
 
-        <div class="categories-bar" id="categories-container" style="display: none;">
-            <div class="cat-filter active" onclick="setCategoryFilter('ВСЕ', this)">Все письма</div>
-            <div class="cat-filter" onclick="setCategoryFilter('ВАЖНО', this)">🔥 Важное</div>
-            <div class="cat-filter" onclick="setCategoryFilter('РАБОТА', this)">💼 Работа</div>
-            <div class="cat-filter" onclick="setCategoryFilter('РЕКЛАМА', this)">🏷️ Реклама</div>
-            <div class="cat-filter" onclick="setCategoryFilter('ЛИЧНОЕ', this)">💬 Личное</div>
-            <div class="cat-filter" onclick="setCategoryFilter('ОБЫЧНО', this)">📫 Обычные</div>
-            <div class="cat-filter" onclick="setCategoryFilter('СПАМ', this)">🗑️ Спам</div>
+        <div id="tools-container" style="display: none;">
+            <div class="categories-bar" id="categories-container">
+                <div class="cat-filter active" onclick="setCategoryFilter('ВСЕ', this)">Все письма</div>
+                <div class="cat-filter" onclick="setCategoryFilter('ИЗБРАННОЕ', this)">⭐ Избранное</div>
+                <div class="cat-filter" onclick="setCategoryFilter('ВАЖНО', this)">🔥 Важное</div>
+                <div class="cat-filter" onclick="setCategoryFilter('РАБОТА', this)">💼 Работа</div>
+                <div class="cat-filter" onclick="setCategoryFilter('РЕКЛАМА', this)">🏷️ Реклама</div>
+                <div class="cat-filter" onclick="setCategoryFilter('ЛИЧНОЕ', this)">💬 Личное</div>
+                <div class="cat-filter" onclick="setCategoryFilter('ОБЫЧНО', this)">📫 Обычные</div>
+                <div class="cat-filter" onclick="setCategoryFilter('СПАМ', this)">🗑️ Спам</div>
+            </div>
+            <div class="search-container">
+                <input type="text" id="search-input" class="search-input" placeholder="🔍 Поиск по отправителю или теме..." oninput="applyFilters()">
+            </div>
         </div>
 
         <div id="emails-wrapper"></div>
@@ -152,23 +209,85 @@
         let currentAccountId = null;
         let currentCategoryFilter = 'ВСЕ';
 
+        // --- UI УЛУЧШЕНИЯ: TOAST И CONFIRM ---
+        function showToast(msg, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const icon = type === 'success' ? '✅' : (type === 'error' ? '❌' : 'ℹ️');
+            toast.innerHTML = `<span>${icon}</span> <span>${msg}</span>`;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('fadeOut');
+                toast.addEventListener('animationend', () => toast.remove());
+            }, 3500);
+        }
+
+        function customConfirm(msg, yesText = "Да, удалить") {
+            return new Promise(resolve => {
+                const modal = document.getElementById('confirm-modal');
+                document.getElementById('confirm-msg').innerText = msg;
+                const btnYes = document.getElementById('confirm-yes');
+                const btnNo = document.getElementById('confirm-no');
+                
+                btnYes.innerText = yesText;
+                modal.classList.remove('hidden');
+                
+                btnYes.onclick = () => { modal.classList.add('hidden'); resolve(true); };
+                btnNo.onclick = () => { modal.classList.add('hidden'); resolve(false); };
+            });
+        }
+
+        // --- ФОРМАТИРОВАНИЕ ДАТЫ ---
+        function formatHumanDate(dateString) {
+            try {
+                const date = new Date(dateString);
+                if (isNaN(date.getTime())) return dateString; 
+                
+                const today = new Date();
+                const yesterday = new Date(today);
+                yesterday.setDate(yesterday.getDate() - 1);
+                
+                const isToday = date.toDateString() === today.toDateString();
+                const isYesterday = date.toDateString() === yesterday.toDateString();
+                
+                const timeStr = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                
+                if (isToday) return `Сегодня в ${timeStr}`;
+                if (isYesterday) return `Вчера в ${timeStr}`;
+                
+                return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) + ` в ${timeStr}`;
+            } catch(e) { 
+                return dateString; 
+            }
+        }
+
+        // --- ОСНОВНАЯ ЛОГИКА ---
         function switchScreen(id) {
             document.querySelectorAll('.auth-container, #app-screen').forEach(el => el.classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
         }
 
         async function register() {
+            if (!document.getElementById('reg-agreement').checked) return showToast("Необходимо подтвердить согласие!", "error");
             const hostSelect = document.getElementById('mail-host').value;
-            if (!hostSelect) return alert("Пожалуйста, выберите почтовый сервис (Mail.ru или Gmail) из списка!");
-
+            if (!hostSelect) return showToast("Выберите почтовый сервис!", "error");
             const body = {
                 email: document.getElementById('reg-email').value, password: document.getElementById('reg-password').value,
                 mail_user: document.getElementById('mail-user').value, mail_pass: document.getElementById('mail-pass').value, mail_host: hostSelect
             };
             const res = await fetch(`${API_URL}/register`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
             const data = await res.json();
-            alert(data.message);
-            if (res.ok) switchScreen('login-screen');
+            
+            if (res.ok) {
+                showToast("Аккаунт успешно создан!", "success");
+                switchScreen('login-screen');
+            } else {
+                showToast(data.message || "Ошибка регистрации", "error");
+            }
         }
 
         async function login() {
@@ -180,21 +299,24 @@
                 currentUserEmail = data.email;
                 document.getElementById('user-display').innerText = currentUserEmail;
                 switchScreen('app-screen');
+                showToast("Вы успешно вошли!", "success");
                 loadAccounts();
             } else {
-                alert("Ошибка входа");
+                showToast("Неверный логин или пароль", "error");
             }
         }
 
         async function loadAccounts() {
             const container = document.getElementById('accounts-container');
-            container.innerHTML = '<span style="color:#747d8c; font-size:14px;">Загрузка ящиков...</span>';
+            container.innerHTML = `
+                <div class="skeleton skeleton-tab"></div>
+                <div class="skeleton skeleton-tab" style="width: 140px;"></div>
+                <div class="skeleton skeleton-tab" style="width: 80px;"></div>
+            `;
             
             const res = await fetch(`${API_URL}/accounts`, { headers: {'x-user-email': currentUserEmail} });
             const accounts = await res.json();
-            
             container.innerHTML = '';
-            
             const wrapper = document.getElementById('emails-wrapper');
             wrapper.innerHTML = ''; 
             
@@ -202,64 +324,72 @@
                 accounts.forEach((acc, index) => {
                     const isActive = index === 0; 
                     if (isActive) currentAccountId = acc.id;
-                    
-                    container.innerHTML += `
-                        <div class="account-tab ${isActive ? 'active' : ''}" onclick="selectAccount(${acc.id}, this)">
-                            ${acc.title || acc.mail_user}
-                        </div>
-                    `;
-
-                    wrapper.innerHTML += `
-                        <div id="email-list-${acc.id}" class="email-container ${isActive ? '' : 'hidden'}"></div>
-                    `;
+                    container.innerHTML += `<div class="account-tab ${isActive ? 'active' : ''}" onclick="selectAccount(${acc.id}, this)">${acc.title || acc.mail_user}</div>`;
+                    wrapper.innerHTML += `<div id="email-list-${acc.id}" class="email-container ${isActive ? '' : 'hidden'}"></div>`;
                 });
-                
-                document.getElementById('categories-container').style.display = 'flex';
+                document.getElementById('tools-container').style.display = 'block';
                 if (currentAccountId) fetchEmails(currentAccountId);
             } else {
-                document.getElementById('categories-container').style.display = 'none';
+                document.getElementById('tools-container').style.display = 'none';
             }
+            
+            container.innerHTML += `
+                <button class="add-account-btn" onclick="openModal()">+ Подключить</button>
+                <button class="manage-btn refresh-btn" onclick="refreshCurrentAccount()" title="Обновить список писем">🔄 Обновить</button>
+                <button class="manage-btn" onclick="openManageModal()">⚙️</button>
+            `;
+        }
 
-            container.innerHTML += `<button class="add-account-btn" onclick="openModal()">+ Подключить почту</button>`;
+        function refreshCurrentAccount() {
+            if (currentAccountId) {
+                const list = document.getElementById(`email-list-${currentAccountId}`);
+                if (list) {
+                    list.dataset.loaded = ''; 
+                    fetchEmails(currentAccountId); 
+                    showToast("Обновляем почту...", "info");
+                }
+            }
         }
 
         function selectAccount(id, el) {
             document.querySelectorAll('.account-tab').forEach(tab => tab.classList.remove('active'));
             el.classList.add('active'); 
             currentAccountId = id;
-            
             document.querySelectorAll('.email-container').forEach(list => list.classList.add('hidden'));
-            const activeList = document.getElementById(`email-list-${id}`);
-            activeList.classList.remove('hidden');
-
-            const allFilterBtn = document.querySelector('.cat-filter');
-            setCategoryFilter('ВСЕ', allFilterBtn);
+            document.getElementById(`email-list-${id}`).classList.remove('hidden');
             
-            if (!activeList.dataset.loaded) {
-                fetchEmails(id); 
-            } else {
-                applyCategoryFilter();
-            }
+            document.getElementById('search-input').value = ''; // Сброс поиска
+            setCategoryFilter('ВСЕ', document.querySelector('.cat-filter')); // Сброс категории
+            
+            if (!document.getElementById(`email-list-${id}`).dataset.loaded) fetchEmails(id); 
+            else applyFilters();
         }
 
         function setCategoryFilter(category, element) {
             document.querySelectorAll('.cat-filter').forEach(t => t.classList.remove('active'));
             element.classList.add('active');
             currentCategoryFilter = category;
-            applyCategoryFilter();
+            applyFilters();
         }
 
-        function applyCategoryFilter() {
+        // ОБНОВЛЕННЫЙ ФИЛЬТР (Поиск + Категории)
+        function applyFilters() {
             const activeList = document.getElementById(`email-list-${currentAccountId}`);
             if (!activeList) return;
-
+            
+            const searchTerm = (document.getElementById('search-input').value || '').toLowerCase();
             const cards = activeList.querySelectorAll('.email-card');
             let visibleCount = 0;
-
+            
             cards.forEach(card => {
                 const cardCategory = card.getAttribute('data-category');
+                const senderMatch = (card.getAttribute('data-sender') || '').toLowerCase();
+                const subjectMatch = (card.getAttribute('data-subject') || '').toLowerCase();
                 
-                if (currentCategoryFilter === 'ВСЕ' || cardCategory === currentCategoryFilter) {
+                const matchCategory = (currentCategoryFilter === 'ВСЕ' || cardCategory === currentCategoryFilter);
+                const matchSearch = senderMatch.includes(searchTerm) || subjectMatch.includes(searchTerm);
+                
+                if (matchCategory && matchSearch) {
                     card.style.display = 'block';
                     visibleCount++;
                 } else {
@@ -267,26 +397,72 @@
                 }
             });
 
-            let noEmailsMsg = activeList.querySelector('.no-emails-msg');
+            // Логика сообщения "Писем нет"
+            let noMsg = activeList.querySelector('.no-emails-msg.filter-msg');
             if (visibleCount === 0 && cards.length > 0) {
-                if (!noEmailsMsg) {
-                    noEmailsMsg = document.createElement('div');
-                    noEmailsMsg.className = 'no-emails-msg';
-                    noEmailsMsg.innerText = 'В этой категории пока нет писем.';
-                    activeList.appendChild(noEmailsMsg);
+                if (!noMsg) {
+                    noMsg = document.createElement('div');
+                    noMsg.className = 'no-emails-msg filter-msg';
+                    activeList.appendChild(noMsg);
                 }
-                noEmailsMsg.style.display = 'block';
-            } else if (noEmailsMsg) {
-                noEmailsMsg.style.display = 'none';
+                noMsg.innerText = searchTerm ? 'По вашему запросу ничего не найдено.' : 'В этой категории пока нет писем.';
+                noMsg.style.display = 'block';
+            } else if (noMsg) {
+                noMsg.style.display = 'none';
             }
         }
 
         function openModal() { document.getElementById('add-account-modal').classList.remove('hidden'); }
         function closeModal() { document.getElementById('add-account-modal').classList.add('hidden'); }
+        function openManageModal() { document.getElementById('manage-accounts-modal').classList.remove('hidden'); renderManageList(); }
+        function closeManageModal() { document.getElementById('manage-accounts-modal').classList.add('hidden'); }
+
+        async function renderManageList() {
+            const container = document.getElementById('manage-list-container');
+            container.innerHTML = '<div class="skeleton-title" style="margin: 20px auto;"></div>';
+            const res = await fetch(`${API_URL}/accounts`, { headers: {'x-user-email': currentUserEmail} });
+            const accounts = await res.json();
+            container.innerHTML = '';
+            accounts.forEach(acc => {
+                container.innerHTML += `
+                    <div class="manage-item">
+                        <input type="text" id="edit-title-${acc.id}" value="${acc.title || acc.mail_user}">
+                        <div class="manage-actions">
+                            <button class="btn-mini btn-save" onclick="renameAccount(${acc.id})" title="Сохранить">💾</button>
+                            <button class="btn-mini btn-del" onclick="deleteAccount(${acc.id})" title="Удалить">🗑️</button>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        async function renameAccount(id) {
+            const res = await fetch(`${API_URL}/accounts/${id}`, {
+                method: 'PATCH', headers: {'Content-Type': 'application/json', 'x-user-email': currentUserEmail},
+                body: JSON.stringify({ title: document.getElementById(`edit-title-${id}`).value })
+            });
+            if (res.ok) { 
+                showToast("Название ящика сохранено!", "success"); 
+                loadAccounts(); 
+            }
+        }
+
+        async function deleteAccount(id) {
+            const confirmed = await customConfirm("Вы уверены, что хотите удалить ящик?\nВсе закэшированные письма и настройки ИИ для него будут безвозвратно удалены.");
+            if (!confirmed) return;
+            
+            const res = await fetch(`${API_URL}/accounts/${id}`, { method: 'DELETE', headers: {'x-user-email': currentUserEmail} });
+            if (res.ok) { 
+                showToast("Ящик успешно удален", "success");
+                renderManageList(); 
+                loadAccounts(); 
+            } else {
+                showToast("Ошибка при удалении", "error");
+            }
+        }
 
         async function addAccount() {
             const hostSelect = document.getElementById('new-mail-host').value;
-            if (!hostSelect) return alert("Пожалуйста, выберите почтовый сервис из списка!");
+            if(!hostSelect) return showToast("Выберите почтовый сервис!", "error");
 
             const body = {
                 title: document.getElementById('new-title').value,
@@ -294,147 +470,151 @@
                 mail_pass: document.getElementById('new-mail-pass').value,
                 mail_host: hostSelect
             };
-
-            const res = await fetch(`${API_URL}/accounts`, { 
-                method: 'POST', headers: {'Content-Type': 'application/json', 'x-user-email': currentUserEmail}, body: JSON.stringify(body) 
-            });
-
-            if (res.ok) {
-                closeModal();
+            const res = await fetch(`${API_URL}/accounts`, { method: 'POST', headers: {'Content-Type': 'application/json', 'x-user-email': currentUserEmail}, body: JSON.stringify(body) });
+            if (res.ok) { 
+                showToast("Ящик успешно подключен!", "success");
+                closeModal(); 
                 loadAccounts(); 
-            } else { 
-                const data = await res.json();
-                alert("Ошибка: " + data.message); 
+            } else {
+                const err = await res.json();
+                showToast(err.message || "Ошибка подключения", "error");
             }
         }
 
         async function fetchEmails(accId) {
             const list = document.getElementById(`email-list-${accId}`);
-            list.innerHTML = '<div class="loading">📡 Подключаемся к ящику...</div>';
+            
+            list.innerHTML = `
+                <div class="skeleton-card">
+                    <div class="skeleton skeleton-badge"></div>
+                    <div class="skeleton skeleton-text short"></div>
+                    <div class="skeleton skeleton-title"></div>
+                    <div class="skeleton skeleton-text"></div>
+                    <div class="skeleton skeleton-text"></div>
+                </div>
+                <div class="skeleton-card">
+                    <div class="skeleton skeleton-badge"></div>
+                    <div class="skeleton skeleton-text short"></div>
+                    <div class="skeleton skeleton-title"></div>
+                    <div class="skeleton skeleton-text"></div>
+                    <div class="skeleton skeleton-text"></div>
+                </div>
+            `;
             list.dataset.loaded = 'true'; 
 
             try {
-                const res = await fetch(`${API_URL}/emails`, { 
-                    headers: { 'x-user-email': currentUserEmail, 'x-account-id': accId } 
-                });
-                
-                if (!res.ok) {
-                    const errorData = await res.json();
-                    throw new Error(errorData.message);
-                }
-                
+                const res = await fetch(`${API_URL}/emails`, { headers: { 'x-user-email': currentUserEmail, 'x-account-id': accId } });
                 const emails = await res.json();
                 list.innerHTML = "";
                 
-                if(emails.length === 0) {
-                    list.innerHTML = '<div class="loading">В этом ящике пока нет писем.</div>';
+                if (emails.length === 0) {
+                    list.innerHTML = '<div class="no-emails-msg">В этом ящике пока нет писем.</div>';
                     return;
                 }
 
                 emails.forEach(mail => {
                     const safeSender = mail.sender ? mail.sender.replace(/"/g, '&quot;') : 'Неизвестный';
                     const safeSubject = mail.subject ? mail.subject.replace(/"/g, '&quot;') : '(Без темы)';
+                    const niceDate = formatHumanDate(mail.date); // Применяем красивую дату
 
                     list.innerHTML += `
                         <div class="email-card" id="card-${accId}-${mail.id}" data-category="PENDING" data-sender="${safeSender}" data-subject="${safeSubject}">
                             <div onclick="loadFullEmail(${mail.id}, ${accId})">
-                                <span class="ai-status" id="status-${accId}-${mail.id}">✨ ИИ анализирует...</span>
-                                <span class="date">${mail.date}</span>
+                                <span class="ai-status" id="status-${accId}-${mail.id}">✨ Анализ...</span>
+                                <span class="date">${niceDate}</span>
                                 <span class="sender">
-                                    ${mail.sender} 
-                                    <span class="category-badge" id="badge-${accId}-${mail.id}"></span>
+                                    ${mail.sender}
+                                    <select class="category-select" id="select-${accId}-${mail.id}" onclick="event.stopPropagation()" onchange="changeEmailCategory(${accId}, ${mail.id}, this.value)">
+                                        <option value="PENDING" disabled hidden selected>Ожидание...</option>
+                                        <option value="ИЗБРАННОЕ">⭐ Избранное</option>
+                                        <option value="ВАЖНО">🔥 Важное</option>
+                                        <option value="РАБОТА">💼 Работа</option>
+                                        <option value="РЕКЛАМА">🏷️ Реклама</option>
+                                        <option value="ЛИЧНОЕ">💬 Личное</option>
+                                        <option value="ОБЫЧНО">📫 Обычное</option>
+                                        <option value="СПАМ">🗑️ Спам</option>
+                                    </select>
                                 </span>
                                 <h3 class="subject">${mail.subject}</h3>
                                 <p class="body" id="preview-${accId}-${mail.id}">${mail.body}</p>
                             </div>
                             <div class="email-text-content" id="full-text-${accId}-${mail.id}"></div>
-                        </div>
-                    `;
+                        </div>`;
                 });
-
-                applyCategoryFilter();
+                applyFilters();
                 analyzeEmailsInBackground(emails, accId);
-            } catch (e) { 
-                list.innerHTML = `<div class="error-msg">❌ ${e.message}</div>`; 
-                list.dataset.loaded = ''; 
-            }
+            } catch (e) { list.innerHTML = `<div class="error-msg">❌ ${e.message}</div>`; }
+        }
+
+        async function changeEmailCategory(accId, uid, newCat) {
+            const card = document.getElementById(`card-${accId}-${uid}`);
+            
+            card.className = `email-card cat-${newCat}`;
+            card.setAttribute('data-category', newCat);
+            applyFilters();
+
+            await fetch(`${API_URL}/emails/${uid}/category`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'x-user-email': currentUserEmail, 'x-account-id': accId },
+                body: JSON.stringify({ category: newCat })
+            });
+            showToast(`Перенесено в ${newCat}`, "success");
         }
 
         async function analyzeEmailsInBackground(emails, accId) {
-            const categoryEmojis = {
-                'ВАЖНО': '🔥', 'РАБОТА': '💼', 'РЕКЛАМА': '🏷️', 'СПАМ': '🗑️', 'ЛИЧНОЕ': '💬', 'ОБЫЧНО': '📫'
-            };
-
             for (let mail of emails) {
                 try {
-                    const res = await fetch(`${API_URL}/emails/${mail.id}/analyze`, { 
-                        headers: { 'x-user-email': currentUserEmail, 'x-account-id': accId } 
-                    });
+                    const res = await fetch(`${API_URL}/emails/${mail.id}/analyze`, { headers: { 'x-user-email': currentUserEmail, 'x-account-id': accId } });
                     const data = await res.json();
-                    
                     const card = document.getElementById(`card-${accId}-${mail.id}`);
-                    const badge = document.getElementById(`badge-${accId}-${mail.id}`);
-                    const statusText = document.getElementById(`status-${accId}-${mail.id}`);
-                    
-                    statusText.style.display = 'none';
+                    const select = document.getElementById(`select-${accId}-${mail.id}`);
+                    document.getElementById(`status-${accId}-${mail.id}`).style.display = 'none';
 
                     if (data.category) {
-                        card.classList.add(`cat-${data.category}`);
+                        card.className = `email-card cat-${data.category}`;
                         card.setAttribute('data-category', data.category); 
-                        const emoji = categoryEmojis[data.category] || '';
-                        badge.innerText = `${emoji} ${data.category}`;
-                    } else {
-                        card.setAttribute('data-category', 'ОБЫЧНО'); 
+                        select.value = data.category;
                     }
-                    
-                    applyCategoryFilter(); 
-
-                    if (!data.cached) {
-                        await new Promise(resolve => setTimeout(resolve, 1500));
-                    }
-
-                } catch (error) {
-                    const card = document.getElementById(`card-${accId}-${mail.id}`);
-                    if (card) card.setAttribute('data-category', 'ОБЫЧНО');
-                    document.getElementById(`status-${accId}-${mail.id}`).style.display = 'none';
-                    applyCategoryFilter();
-                }
+                    applyFilters();
+                    if (!data.cached) await new Promise(resolve => setTimeout(resolve, 1000));
+                } catch (e) { document.getElementById(`status-${accId}-${mail.id}`).style.display = 'none'; }
             }
         }
 
         async function loadFullEmail(uid, accId) {
             const previewText = document.getElementById(`preview-${accId}-${uid}`);
             const fullTextContainer = document.getElementById(`full-text-${accId}-${uid}`);
-
             if (fullTextContainer.style.display === 'block') {
                 fullTextContainer.style.display = 'none';
                 previewText.style.display = 'block';
                 return;
             }
-
             previewText.style.display = 'none';
             fullTextContainer.style.display = 'block';
-            fullTextContainer.innerHTML = '<div class="loading">📥 Загрузка текста письма...</div>';
+            
+            fullTextContainer.innerHTML = `
+                <div style="margin-top: 15px;">
+                    <div class="skeleton skeleton-title" style="height: 30px; margin-bottom: 20px;"></div>
+                    <div class="skeleton skeleton-text"></div>
+                    <div class="skeleton skeleton-text"></div>
+                    <div class="skeleton skeleton-text short"></div>
+                </div>
+            `;
 
             try {
-                const res = await fetch(`${API_URL}/emails/${uid}`, { 
-                    headers: { 'x-user-email': currentUserEmail, 'x-account-id': accId } 
-                });
+                const res = await fetch(`${API_URL}/emails/${uid}`, { headers: { 'x-user-email': currentUserEmail, 'x-account-id': accId } });
                 const data = await res.json();
-                
                 fullTextContainer.innerHTML = `
                     <button class="btn-summary" id="btn-sum-${accId}-${uid}" onclick="generateSummary(${uid}, ${accId})">✨ Сделать AI-выжимку</button>
                     <div id="sum-box-${accId}-${uid}" class="hidden"></div>
-                    <div class="original-text" id="raw-text-${accId}-${uid}">${data.text}</div>
-                `;
+                    <div class="original-text">${data.text}</div>`;
             } catch (error) { fullTextContainer.innerHTML = '<span style="color:red">❌ Ошибка загрузки.</span>'; }
         }
 
         async function generateSummary(uid, accId) {
             const btn = document.getElementById(`btn-sum-${accId}-${uid}`);
             const sumBox = document.getElementById(`sum-box-${accId}-${uid}`);
-            const rawText = document.getElementById(`raw-text-${accId}-${uid}`).innerText;
-            
+            const rawText = document.querySelector(`#full-text-${accId}-${uid} .original-text`).innerText;
             const card = document.getElementById(`card-${accId}-${uid}`);
             const sender = card.getAttribute('data-sender');
             const subject = card.getAttribute('data-subject');
@@ -444,13 +624,9 @@
             btn.style.opacity = '0.7';
 
             try {
-                const res = await fetch(`${API_URL}/emails/${uid}/summary`, { 
+                const res = await fetch(`${API_URL}/emails/${uid}/summary`, {
                     method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'x-user-email': currentUserEmail, 
-                        'x-account-id': accId 
-                    },
+                    headers: { 'Content-Type': 'application/json', 'x-user-email': currentUserEmail, 'x-account-id': accId },
                     body: JSON.stringify({ text: rawText, sender: sender, subject: subject })
                 });
                 
@@ -463,19 +639,14 @@
                 
                 btn.style.display = 'none';
                 sumBox.classList.remove('hidden');
-                sumBox.innerHTML = `
-                    <div class="ai-summary-box">
-                        <div class="ai-title" style="font-weight:bold; margin-bottom:5px;">✨ AI Саммари:</div>
-                        ${data.summary}
-                    </div>
-                `;
-
+                sumBox.innerHTML = `<div class="ai-summary-box"><div style="font-weight:bold; margin-bottom:5px;">✨ AI Саммари:</div>${data.summary}</div>`;
+                showToast("Выжимка готова!", "success");
             } catch (error) {
-                // ТЕПЕРЬ ОШИБКА БУДЕТ НАПИСАНА ПРЯМО НА КНОПКЕ
                 btn.innerText = `❌ ${error.message}. Попробовать снова`;
                 btn.disabled = false;
                 btn.style.opacity = '1';
                 btn.style.background = '#ff4757';
+                showToast("Сбой ИИ", "error");
             }
         }
 
